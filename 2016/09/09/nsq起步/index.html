@@ -1,21 +1,21 @@
 <!doctype html>
 <html lang="en">
-    <head>
+    <head><meta name="generator" content="Hexo 3.9.0">
 		
         <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <meta name="description" content="">
-        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png"/>
+        <meta name="description" content>
+        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png">
         <link rel="canonical" href="http://guolinn.com/">
-        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href="">
+        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href>
         <title>nsq-quick-start | peteyuan.com</title>
         <meta name="description" content="{{meta_description}}">
 
         <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
-        <meta name="HandheldFriendly" content="True" />
-        <meta name="MobileOptimized" content="320" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
         <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
@@ -29,7 +29,7 @@
 	
 
         <header id="header">
-            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com" /></a>
+            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com"></a>
             <h1><a href="/">Pete Yuan</a></h1>
             <p></p>
             <div id="follow-icons">
@@ -46,7 +46,7 @@
     <span class="taglist">  &middot; 
     
     
-      <a href='/tags/nsq/'>nsq</a> 
+      <a href="/tags/nsq/">nsq</a> 
     
     </span>
   
@@ -54,39 +54,32 @@
   <h1 class="post-title">nsq-quick-start</h1>
   <section class="post-content article-entry">
     <h4 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h4><p>在mac上</p>
-<pre class="line-numbers language-bash"><code class="language-bash">brew <span class="token function">install</span> nsq
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">brew <span class="token function">install</span> nsq<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <ul>
 <li>启动管理拓扑信息并提供最终一致性的发现服务的守护进程</li>
 </ul>
-<pre class="line-numbers language-bash"><code class="language-bash">nsqlookupd
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">nsqlookupd<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <ul>
 <li>启动负责接收、排队、转发消息到客户端的守护进程, 在不同的shell中</li>
 </ul>
-<pre class="line-numbers language-bash"><code class="language-bash">nsqd  --lookupd-tcp-address<span class="token operator">=</span>127.0.0.1:4160
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">nsqd  --lookupd-tcp-address<span class="token operator">=</span>127.0.0.1:4160<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <ul>
 <li>启动web界面，在不同的shell中</li>
 </ul>
-<pre class="line-numbers language-bash"><code class="language-bash">nsqadmin --lookupd-http-address<span class="token operator">=</span>127.0.0.1:4161
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">nsqadmin --lookupd-http-address<span class="token operator">=</span>127.0.0.1:4161<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <ul>
 <li>发布初始消息</li>
 </ul>
-<pre class="line-numbers language-bash"><code class="language-bash">curl -d <span class="token string">'hello world 1'</span> <span class="token string">'http://127.0.0.1:4151/put?topic=test'</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">curl -d <span class="token string">'hello world 1'</span> <span class="token string">'http://127.0.0.1:4151/put?topic=test'</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <ul>
 <li>在另外的shell中把消息导入文件</li>
 </ul>
-<pre class="line-numbers language-bash"><code class="language-bash">nsq_to_file --topic<span class="token operator">=</span>test --output-dir<span class="token operator">=</span>/tmp --lookupd-http-address<span class="token operator">=</span>127.0.0.1:4161
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">nsq_to_file --topic<span class="token operator">=</span>test --output-dir<span class="token operator">=</span>/tmp --lookupd-http-address<span class="token operator">=</span>127.0.0.1:4161<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <ul>
 <li>发布消息到nsq</li>
 </ul>
 <pre class="line-numbers language-bash"><code class="language-bash">$ curl -d <span class="token string">'hello world 2'</span> <span class="token string">'http://127.0.0.1:4151/put?topic=test'</span>
-$ curl -d <span class="token string">'hello world 3'</span> <span class="token string">'http://127.0.0.1:4151/put?topic=test'</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+$ curl -d <span class="token string">'hello world 3'</span> <span class="token string">'http://127.0.0.1:4151/put?topic=test'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <ul>
 <li>验证<br>查看 nsqadmin的UI <a href="http://127.0.0.1:4171/，也可以检查" target="_blank" rel="noopener">http://127.0.0.1:4171/，也可以检查</a> /tmp 中的log文件 test.*.log</li>
 </ul>

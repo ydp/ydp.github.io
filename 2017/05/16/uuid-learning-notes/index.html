@@ -1,21 +1,21 @@
 <!doctype html>
 <html lang="en">
-    <head>
+    <head><meta name="generator" content="Hexo 3.9.0">
 		
         <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <meta name="description" content="">
-        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png"/>
+        <meta name="description" content>
+        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png">
         <link rel="canonical" href="http://guolinn.com/">
-        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href="">
+        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href>
         <title>C++ UUID库 | peteyuan.com</title>
         <meta name="description" content="{{meta_description}}">
 
         <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
-        <meta name="HandheldFriendly" content="True" />
-        <meta name="MobileOptimized" content="320" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
         <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
@@ -29,7 +29,7 @@
 	
 
         <header id="header">
-            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com" /></a>
+            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com"></a>
             <h1><a href="/">Pete Yuan</a></h1>
             <p></p>
             <div id="follow-icons">
@@ -46,7 +46,7 @@
     <span class="taglist">  &middot; 
     
     
-      <a href='/tags/c/'>c++</a> 
+      <a href="/tags/cpp/">cpp</a> 
     
     </span>
   
@@ -55,8 +55,7 @@
   <section class="post-content article-entry">
     <p>库名 libuuid 下载地址<a href="https://sourceforge.net/projects/libuuid/" target="_blank" rel="noopener">https://sourceforge.net/projects/libuuid/</a><br>版本1.0.3<br>运行环境：mac</p>
 <h4 id="接口"><a href="#接口" class="headerlink" title="接口"></a>接口</h4><p>uuid对外定义为一个无符号字符数组,这是一个压缩后的存储</p>
-<pre class="line-numbers language-c"><code class="language-c"><span class="token keyword">typedef</span> <span class="token keyword">unsigned</span> <span class="token keyword">char</span> uuid_t<span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-c"><code class="language-c"><span class="token keyword">typedef</span> <span class="token keyword">unsigned</span> <span class="token keyword">char</span> uuid_t<span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>内部其实是一个结构体</p>
 <pre class="line-numbers language-c"><code class="language-c"><span class="token keyword">struct</span> uuid <span class="token punctuation">{</span>
     uint32_t    time_low<span class="token punctuation">;</span>
@@ -64,8 +63,7 @@
     uint16_t    time_hi_and_version<span class="token punctuation">;</span>
     uint16_t    clock_seq<span class="token punctuation">;</span>
     uint8_t node<span class="token punctuation">[</span><span class="token number">6</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span><span class="token punctuation">;</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token punctuation">}</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>time_low是一个32位整数，每8位转化成一个无符号字符，占了前面4位，然后是time_mid占2位，time_hi_and_version占2位，clock_seq占2位，最后node数组占6位，一共正好16位。</p>
 <p>提供4个函数生成不同的uuid</p>
 <ul>
@@ -124,8 +122,7 @@
 <span class="token comment" spellcheck="true">/* uuid_time.c */</span>
 time_t <span class="token function">uuid_time</span><span class="token punctuation">(</span><span class="token keyword">const</span> uuid_t uu<span class="token punctuation">,</span> <span class="token keyword">struct</span> timeval <span class="token operator">*</span>ret_tv<span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">int</span> <span class="token function">uuid_type</span><span class="token punctuation">(</span><span class="token keyword">const</span> uuid_t uu<span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token keyword">int</span> <span class="token function">uuid_variant</span><span class="token punctuation">(</span><span class="token keyword">const</span> uuid_t uu<span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token keyword">int</span> <span class="token function">uuid_variant</span><span class="token punctuation">(</span><span class="token keyword">const</span> uuid_t uu<span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>源码中包含的test代码：</p>
 <pre class="line-numbers language-c"><code class="language-c"><span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;stdio.h></span></span>
 <span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;stdlib.h></span></span>
@@ -260,8 +257,7 @@ time_t <span class="token function">uuid_time</span><span class="token punctuati
         <span class="token function">exit</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
     <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>运行命令：<code>gcc test_uuid.c -I uuid.h .libs/libuuid.a</code><br>输出结果</p>
 <pre class="line-numbers language-shell"><code class="language-shell">UUID generate = dda308b8-92b7-425e-a0e9-5d3549b0a21d
 UUID: dda308b892b7425ea0e95d3549b0a21d
@@ -289,8 +285,7 @@ UUID copy and compare succeeded.
 84949cc5-4701-4a840895b-354c584a981b is invalid, OK
 84949cc5-4701-4a84-895b0354c584a981b is invalid, OK
 g4949cc5-4701-4a84-895b-354c584a981b is invalid, OK
-84949cc5-4701-4a84-895b-354c584a981g is invalid, O
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+84949cc5-4701-4a84-895b-354c584a981g is invalid, O<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <h4 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h4><p>./configure,make编译<br>简单代码示例:</p>
 <pre class="line-numbers language-c++"><code class="language-c++">#include <iostream>
 #include "uuid.h"
@@ -307,8 +302,7 @@ int main(int argc, char* argv[])
     uuid_unparse(id1, str);
     cout << str << endl;
     return 0;
-}
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></iostream></code></pre>
 <p>编译：<code>clang++ check.cpp -I uuid.h .libs/libuuid.a</code></p>
 
   </section>

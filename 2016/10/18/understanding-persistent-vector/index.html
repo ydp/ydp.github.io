@@ -1,21 +1,21 @@
 <!doctype html>
 <html lang="en">
-    <head>
+    <head><meta name="generator" content="Hexo 3.9.0">
 		
         <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <meta name="description" content="">
-        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png"/>
+        <meta name="description" content>
+        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png">
         <link rel="canonical" href="http://guolinn.com/">
-        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href="">
+        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href>
         <title>understanding-persistent-vector | peteyuan.com</title>
         <meta name="description" content="{{meta_description}}">
 
         <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
-        <meta name="HandheldFriendly" content="True" />
-        <meta name="MobileOptimized" content="320" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
         <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
@@ -29,7 +29,7 @@
 	
 
         <header id="header">
-            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com" /></a>
+            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com"></a>
             <h1><a href="/">Pete Yuan</a></h1>
             <p></p>
             <div id="follow-icons">
@@ -46,7 +46,7 @@
     <span class="taglist">  &middot; 
     
     
-      <a href='/tags/clojure/'>clojure</a> 
+      <a href="/tags/clojure/">clojure</a> 
     
     </span>
   
@@ -64,7 +64,7 @@
 </ul>
 <p>作者是leiningen的维护者, <a href="http://hypirion.com/" target="_blank" rel="noopener">blog</a></p>
 <p>我把这几篇文章合并到一起了，如果想要更清楚的描述，请直接阅读以上英文文档。</p>
-<h2 id="Part-1"><a href="#Part-1" class="headerlink" title="Part 1"></a>Part 1</h2><p>听过或者没有，clojure的persistent vector就在那里，Rich为clojure开发了这个数据结构（灵感来自Phil Bagwell的论文<a href="">Ideal Hash Tree</a>），使得append、update、lookup和subvec的时间复杂度为O(1)。因为所有的vector都是持久化的，所有对vector的修改操作都不会改变原来结构，而是生成一个全新的vector。</p>
+<h2 id="Part-1"><a href="#Part-1" class="headerlink" title="Part 1"></a>Part 1</h2><p>听过或者没有，clojure的persistent vector就在那里，Rich为clojure开发了这个数据结构（灵感来自Phil Bagwell的论文<a href>Ideal Hash Tree</a>），使得append、update、lookup和subvec的时间复杂度为O(1)。因为所有的vector都是持久化的，所有对vector的修改操作都不会改变原来结构，而是生成一个全新的vector。</p>
 <p>听起来非常不可思议，但这怎么能做到呢？我会在本文详细介绍它的实现，以及实现过程中的一些技巧。</p>
 <p>首先，我们看一下3个基础操作：update、append、popping。这3个操作是Clojure Persistent Vector的内核，稍后，我们再看看一些对常用便捷操作上的优化，比如transient和tail。</p>
 <h3 id="基本思路"><a href="#基本思路" class="headerlink" title="基本思路"></a>基本思路</h3><p>C++ STL的vector和Java的ArrayList底层使用最基础的数组实现，在空间不够的时候，会自动分配内存。如果你想要可变性，这就是完美的，但如果你想要持久性，这就行不通。要实现持久性，你就需要频繁的生成新对象，这会导致修改操作变得极慢，且内存消耗速增。怎么才能在查询和修改时避免这种底层数据的拷贝以获得最佳性能？这就是clojure 的persistent vector实现所完成的工作，它的实现实际上是一颗平衡排序树。</p>
@@ -80,8 +80,7 @@
 <p>更新一个元素，先沿着树遍历到需要更新的节点，遍历过程就会拷贝遍历过的路径以保证后续的持久性，遍历到节点后，直接拷贝出一个新的节点，然后把值替换掉，然后返回一个新的vector，这个新的vector包含的是拷贝出来的新的路径。</p>
 <p>举个栗子。在vector上执行一个assoc操作：</p>
 <pre class="line-numbers language-clojure"><code class="language-clojure">(def brown [0 1 2 3 4 5 6 7 8])
-(def blue (assoc brown 5 'beef))
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+(def blue (assoc brown 5 'beef))<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <p>操作演示如下，蓝色vector是拷贝出来的新路径：</p>
 <p><img src="http://hypirion.com/imgs/pvec/update.png" alt="two vectors, where we&#39;re updated a value"></p>
 <p>假设我们已经知道如何获取需要遍历的路径（后文会介绍这个部分），这个操作还算简单。</p>
@@ -113,8 +112,7 @@
 <p>记住，在一个vector上多次执行popping操作不会生成相同的vector，他们包含的元素相同，但他们不共享跟节点，举例：</p>
 <pre class="line-numbers language-clojure"><code class="language-clojure">(def brown [0 1 2 3 4 5])
 (def blue (pop brown))
-(def green (pop brown))
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+(def green (pop brown))<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 <p><img src="http://hypirion.com/imgs/pvec/pop-twice.png" alt="performing pops on the same vector"></p>
 <h4 id="2-删除空节点"><a href="#2-删除空节点" class="headerlink" title="2: 删除空节点"></a>2: 删除空节点</h4><p>如果执行完popping操作后，最右叶节点为空，那这个节点需要被回收，父节点不再指向这个节点，应该置空（空指针）。</p>
 <p><img src="http://hypirion.com/imgs/pvec/pop-2.png" alt="popping and removing a leaf node"></p>
@@ -134,8 +132,7 @@
           (if (== sub-idx 0)
             nil
             (copy-and-remove cur-node sub-idx))
-          (copy-and-replace cur-node sub-idx child))))))
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+          (copy-and-replace cur-node sub-idx child))))))<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>以上实现就可以保证移除空节点不会带来问题，下面的例子演示了新生成的蓝色的vector实际上删除了两个节点：叶子节点c和它的父节点：</p>
 <p><img src="http://hypirion.com/imgs/pvec/pop-2-recur.png" alt="popping and removing mutiple nodes"></p>
 <h4 id="3-Root-Killing"><a href="#3-Root-Killing" class="headerlink" title="3: Root Killing"></a>3: Root Killing</h4><p>还剩最后一种情况，依照上面的方法，以下棕色的树在移除8这个节点后会得到蓝色的树，如图：</p>
@@ -205,8 +202,7 @@
     <span class="token comment" spellcheck="true">// Last element is the value we want to lookup, return it.</span>
     <span class="token keyword">return</span> node<span class="token punctuation">[</span>key <span class="token operator">%</span> RADIX<span class="token punctuation">]</span><span class="token punctuation">;</span>
   <span class="token punctuation">}</span>  
-<span class="token punctuation">}</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>rDepth代表根节点下子节点的最大</p>
 
   </section>

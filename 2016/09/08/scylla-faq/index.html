@@ -1,21 +1,21 @@
 <!doctype html>
 <html lang="en">
-    <head>
+    <head><meta name="generator" content="Hexo 3.9.0">
 		
         <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <meta name="description" content="">
-        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png"/>
+        <meta name="description" content>
+        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png">
         <link rel="canonical" href="http://guolinn.com/">
-        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href="">
+        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href>
         <title>ScyllaDB FAQ | peteyuan.com</title>
         <meta name="description" content="{{meta_description}}">
 
         <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
-        <meta name="HandheldFriendly" content="True" />
-        <meta name="MobileOptimized" content="320" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
         <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
@@ -29,7 +29,7 @@
 	
 
         <header id="header">
-            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com" /></a>
+            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com"></a>
             <h1><a href="/">Pete Yuan</a></h1>
             <p></p>
             <div id="follow-icons">
@@ -46,7 +46,7 @@
     <span class="taglist">  &middot; 
     
     
-      <a href='/tags/Scylla/'>Scylla</a> 
+      <a href="/tags/Scylla/">Scylla</a> 
     
     </span>
   
@@ -68,19 +68,16 @@
 <p>3.0以后，我们会评估新的feature，看是否合适scylla，但总的目标是保持兼容。</p>
 <p>我们还打算引入一些扩展和增强功能，和Cassandra社区一起开发新feature，因此我们不会打破Cassandra已经建立起来的(NOSQL)生态，支持在同样的驱动和应用程序代码下可以来回切换这两套(NOSQL)方案。</p>
 <h4 id="UBUNTU"><a href="#UBUNTU" class="headerlink" title="UBUNTU"></a>UBUNTU</h4><h6 id="检查更新UBUNTU-14-04内核"><a href="#检查更新UBUNTU-14-04内核" class="headerlink" title="检查更新UBUNTU 14.04内核"></a>检查更新UBUNTU 14.04内核</h6><p>检查内核</p>
-<pre class="line-numbers language-bash"><code class="language-bash"><span class="token function">uname</span> -a
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash"><span class="token function">uname</span> -a<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>如果内核版本低于3.15，执行:</p>
 <pre class="line-numbers language-bash"><code class="language-bash"><span class="token function">sudo</span> apt-cache search linux-image
 <span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> linux-image-your_version_choice
-<span class="token function">sudo</span> <span class="token function">reboot</span> now
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<span class="token function">sudo</span> <span class="token function">reboot</span> now<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 <p>先检查可用的内核镜像，然后安装，重启</p>
 <h4 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h4><h6 id="scylla可以安装在一个Cassandra服务器上吗？"><a href="#scylla可以安装在一个Cassandra服务器上吗？" class="headerlink" title="scylla可以安装在一个Cassandra服务器上吗？"></a>scylla可以安装在一个Cassandra服务器上吗？</h6><p>scylla有自己的Cassandra客户端工具，在scylla-tools包里，在一个已经安装Cassandra的服务器上安装它可能会导致下面的问题：</p>
 <pre class="line-numbers language-bash"><code class="language-bash">Unpacking scylla-tools <span class="token punctuation">(</span>1.0.1-20160411.b9fe89b-ubuntu1<span class="token punctuation">)</span> <span class="token punctuation">..</span>.
 dpkg: error processing archive /var/cache/apt/archives/scylla-tools_1.0.1-20160411.b9fe89b-ubuntu1_all.deb <span class="token punctuation">(</span>--unpack<span class="token punctuation">)</span>:
-trying to overwrite <span class="token string">'/usr/bin/nodetool'</span>, <span class="token function">which</span> is also <span class="token keyword">in</span> package cassandra 2.1.4
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+trying to overwrite <span class="token string">'/usr/bin/nodetool'</span>, <span class="token function">which</span> is also <span class="token keyword">in</span> package cassandra 2.1.4<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 <p>我们建议在安装scylla-tools前先卸载Cassandra。</p>
 <h4 id="帮助"><a href="#帮助" class="headerlink" title="帮助"></a>帮助</h4><p>哪儿可以问问题？</p>
 <p>邮件列表：</p>

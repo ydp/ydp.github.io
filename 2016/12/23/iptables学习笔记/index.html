@@ -1,21 +1,21 @@
 <!doctype html>
 <html lang="en">
-    <head>
+    <head><meta name="generator" content="Hexo 3.9.0">
 		
         <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <meta name="description" content="">
-        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png"/>
+        <meta name="description" content>
+        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png">
         <link rel="canonical" href="http://guolinn.com/">
-        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href="">
+        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href>
         <title>iptables学习笔记 | peteyuan.com</title>
         <meta name="description" content="{{meta_description}}">
 
         <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
-        <meta name="HandheldFriendly" content="True" />
-        <meta name="MobileOptimized" content="320" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
         <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
@@ -29,7 +29,7 @@
 	
 
         <header id="header">
-            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com" /></a>
+            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com"></a>
             <h1><a href="/">Pete Yuan</a></h1>
             <p></p>
             <div id="follow-icons">
@@ -82,22 +82,18 @@
 </ul>
 <h4 id="踩过的坑"><a href="#踩过的坑" class="headerlink" title="踩过的坑"></a>踩过的坑</h4><ul>
 <li><p>不小心把其中一台机器的22端口给禁掉了，使用的命令</p>
-<pre class="line-numbers language-shell"><code class="language-shell">iptables -A INPUT -p tcp --dport 22  -j REJECT --reject-with icmp-port-unreachable
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-shell"><code class="language-shell">iptables -A INPUT -p tcp --dport 22  -j REJECT --reject-with icmp-port-unreachable<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>这个命令发出之后，直接导致我没法登录机器了，我用命令的原因是因为之前使用 iptables –list INPUT 查看显示出来的规则信息就这么多，于是也就只配置了这些规则，但这条命令会禁止所有对22端口的访问，包括公网和内网（这个时候找同事帮忙，才知道阿里云可以从浏览器直接登录命令行，试了一下，果然可以，想了一下，阿里云这里是使用了VNC远程登录，因为是LINUX，所以就直接进的命令行，而VNC的端口肯定不是22，如果真的不小心把外网的所有端口都封了，那估计只能找客服了）。而实际上只需要禁止公网就够了，正确的命令应该是</p>
-<pre class="line-numbers language-shell"><code class="language-shell">iptables -A INPUT -i eth1 -p tcp --dport 22  -j REJECT --reject-with icmp-port-unreachable
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-shell"><code class="language-shell">iptables -A INPUT -i eth1 -p tcp --dport 22  -j REJECT --reject-with icmp-port-unreachable<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>配置好之后，怎么看每条规则是对应的哪个网卡，最好使用最详细的查看命令 iptables -nvL –line-number，这个命令就会显示网卡信息</p>
 </li>
 <li><p>扫描端口的时候漏了部分端口</p>
 </li>
 </ul>
 <p>开始所有工作前，我先安装了nmap <code>yum install nmap</code>，扫描机器目前对外开放的所有端口：</p>
-<pre class="line-numbers language-shell"><code class="language-shell">nmap 127.0.0.1
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-shell"><code class="language-shell">nmap 127.0.0.1<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>这个默认只扫描一部分端口，扫描所有端口需要使用：</p>
-<pre class="line-numbers language-shell"><code class="language-shell">nmap -p 1-65535 127.0.0.1
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-shell"><code class="language-shell">nmap -p 1-65535 127.0.0.1<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
   </section>
   <footer class="post-footer">

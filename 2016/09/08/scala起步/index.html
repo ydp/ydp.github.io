@@ -1,21 +1,21 @@
 <!doctype html>
 <html lang="en">
-    <head>
+    <head><meta name="generator" content="Hexo 3.9.0">
 		
         <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <meta name="description" content="">
-        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png"/>
+        <meta name="description" content>
+        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png">
         <link rel="canonical" href="http://guolinn.com/">
-        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href="">
+        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href>
         <title>scala入门 | peteyuan.com</title>
         <meta name="description" content="{{meta_description}}">
 
         <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
-        <meta name="HandheldFriendly" content="True" />
-        <meta name="MobileOptimized" content="320" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
         <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
@@ -29,7 +29,7 @@
 	
 
         <header id="header">
-            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com" /></a>
+            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com"></a>
             <h1><a href="/">Pete Yuan</a></h1>
             <p></p>
             <div id="follow-icons">
@@ -46,7 +46,7 @@
     <span class="taglist">  &middot; 
     
     
-      <a href='/tags/scala/'>scala</a> 
+      <a href="/tags/scala/">scala</a> 
     
     </span>
   
@@ -54,37 +54,29 @@
   <h1 class="post-title">scala入门</h1>
   <section class="post-content article-entry">
     <p>mac上安装</p>
-<pre class="line-numbers language-bash"><code class="language-bash">brew <span class="token function">install</span> scala
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">brew <span class="token function">install</span> scala<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>配置vim对scala高亮，使用Plugin的方式</p>
 <pre class="line-numbers language-bash"><code class="language-bash">Plugin <span class="token string">'derekwyatt/vim-scala'</span>
 :PluginInstall
-<span class="token keyword">.</span> ~/.vimrc
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<span class="token keyword">.</span> ~/.vimrc<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 <p>编写helloworld, 新建文件 hello.scala</p>
 <pre class="line-numbers language-scala"><code class="language-scala"><span class="token keyword">object</span> HelloWorld <span class="token punctuation">{</span>
     <span class="token keyword">def</span> main<span class="token punctuation">(</span>args<span class="token operator">:</span> Array<span class="token punctuation">[</span><span class="token builtin">String</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">Unit</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
         println<span class="token punctuation">(</span><span class="token string">"Hello, World!"</span><span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
-<span class="token punctuation">}</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>运行：</p>
-<pre class="line-numbers language-scala"><code class="language-scala">scala hello<span class="token punctuation">.</span>scala
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-scala"><code class="language-scala">scala hello<span class="token punctuation">.</span>scala<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <h4 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h4><pre class="line-numbers language-bash"><code class="language-bash">scalac hello.scala
-scala HelloWorld
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+scala HelloWorld<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <p>还可以给scala指定选项， -d 指定生成的class文件目录</p>
-<pre class="line-numbers language-bash"><code class="language-bash">scalac -d classes hello.scala
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">scalac -d classes hello.scala<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>也可以指定类路径，比如刚刚的类生成在classes文件夹下，运行就这么做：</p>
-<pre class="line-numbers language-bash"><code class="language-bash">scala -cp classes HelloWorld
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">scala -cp classes HelloWorld<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>注意： scala的参数必须是top-level对象，如果继承了trait App，那么对象里的所有语句都会被执行，如下。</p>
 <pre class="line-numbers language-scala"><code class="language-scala"><span class="token keyword">object</span> HelloWorld <span class="token keyword">extends</span> App <span class="token punctuation">{</span>
     println<span class="token punctuation">(</span><span class="token string">"Hello, World!"</span><span class="token punctuation">)</span>
-<span class="token punctuation">}</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 <p>否则的话，就要像前面的例子一样定义main方法。</p>
 <h4 id="交互式运行"><a href="#交互式运行" class="headerlink" title="交互式运行"></a>交互式运行</h4><p>在shell中输入代码：</p>
 <pre class="line-numbers language-bash"><code class="language-bash">localhost:~ yuandingping$ scala
@@ -107,29 +99,23 @@ scala<span class="token operator">></span> q
        ^
 
 scala<span class="token operator">></span> :q
-localhost:~ yuandingping$
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+localhost:~ yuandingping$<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>:q 表示退出scala环境。</p>
 <h4 id="脚本运行"><a href="#脚本运行" class="headerlink" title="脚本运行"></a>脚本运行</h4><p>scala还可以运行在脚本中， 比如script.sh:</p>
 <pre class="line-numbers language-bash"><code class="language-bash"><span class="token comment" spellcheck="true">#!/usr/bin/env scala</span>
 object HelloWorld extends App <span class="token punctuation">{</span>
     println<span class="token punctuation">(</span><span class="token string">"Hello, World!"</span><span class="token punctuation">)</span>
-<span class="token punctuation">}</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
 <p>运行：</p>
-<pre class="line-numbers language-bash"><code class="language-bash">./script.sh
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">./script.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>注意： script.sh必须有可执行权限，且scala命令加入了类路径</p>
 <p>貌似下面的执行方法是不对的:</p>
-<pre class="line-numbers language-bash"><code class="language-bash">sh script.sh
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">sh script.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>但是可以这样:</p>
-<pre class="line-numbers language-bash"><code class="language-bash">scala script.sh
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">scala script.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>以上<br><a href="http://www.scala-lang.org/documentation/getting-started.html" target="_blank" rel="noopener">原文链接</a></p>
 <p>scala一般使用sbt管理工程，执行编译构建等工作:</p>
-<pre class="line-numbers language-bash"><code class="language-bash">brew <span class="token function">install</span> sbt
-<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash"><code class="language-bash">brew <span class="token function">install</span> sbt<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>这里有很多scala的学习资料： </p>
 <ul>
 <li><a href="https://twitter.github.io/scala_school/zh_cn/" target="_blank" rel="noopener">scala课堂</a></li>
