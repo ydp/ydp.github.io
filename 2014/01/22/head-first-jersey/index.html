@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+    <head>
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content="">
+        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png"/>
+        <link rel="canonical" href="http://guolinn.com/">
+        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href="">
+        <title>jersey初探 | peteyuan.com</title>
+        <meta name="description" content="{{meta_description}}">
+
+        <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True" />
+        <meta name="MobileOptimized" content="320" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com" /></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <div id="follow-icons">
+              </div>
+<h6><a href="/about">About</a></h6>
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  January 22, 2014
+  
+
+  <h1 class="post-title">jersey初探</h1>
+  <section class="post-content article-entry">
+    <p>最近工作中常被要求写REST服务，基本上我都是用的jersey来实现，这个框架好用，功能强大，那就写个教程吧，把相关的知识记录下来。</p>
+<p>这一篇只是一个导读，是我自己对jersey的理解，会持续更新，欢迎指正错误。</p>
+<p>首先谈REST服务，是比soap轻量级的web service，中文译为“表述性状态转移”，什么意思呢？在REST中，很重要的概念就是资源，它使用http原有的基础组件来定义REST服务，比如GET/POST/PUT/DELETE等方法来代表资源的增删改查，所谓资源可以指网络上的任何有价值的实体，比如服务，文件等，每一个URL对应一个资源，每一个方法就对应对这个资源的操作。这是基本概念。你对某一个资源进行了操作，就改变了这个资源的状态。</p>
+<p>更重要的是，REST是要能构建起一整套可用的服务，你开发了一个服务器，然后提供给用户一个URL，用户可以对这个URL进行GET/POST操作，这其实只是REST很简单的应用，当涉及企业级REST服务的时候，企业级用户提供给用户的通常是一整套的服务，比如你开发网页，在网上搭建了一个网站，网站只有简单的几个页面，大概就是个博客吧，这通常都不能作为企业服务，它就是你自己方便记录一些东西，用户来了方便阅读你的归档文章，这不同于门户网站或者电子商务网站，用户首先打开你的首页，然后在首页发现你网站下的各个分类，比如新闻、体育或团购、图书等，用户进入体育页面又有篮球、足球，进入图书页面又有少儿、历史等，然后当你最终定位到某一个资源比如体育视频或某一本图书，你可以观察或评论这个视频，你可以购买这本图书，这是你最终的操作。基于这样一个非常符合用户习惯的体验，REST也想这么做，REST提供给用户一个基本的URL，比如<a href="">http://test.com</a>，用户通过这个URL可以看到在这个URL下有哪些服务比如<a href="">http://test.com/books</a>，<a href="">http://test.com/sports</a>，然后用户通过<a href="">http://test.com/books</a>可以看到所有的图书列表，在根据<a href="">http://test.com/books/23</a>对某一个图书操作，这就使得用户在使用REST的服务的时候就想访问一般的网站一样，很方便，很明显的优点是用户无需记忆所有的URL，只要给它一个基本的URL，然后他就能顺藤找下去，完成资源的操作。这大概就是所谓的表述性吧？一个专业的词汇叫做hateoas。</p>
+<p>以上两点加起来就是所谓的“表述性状态转移”（REST），使用jersey可以较轻易地实现上面两点（当然，spring也可以实现，jersey较轻量级）。</p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2015/08/11/tail-zero-count/">
+        ← prev <!--尾部的零-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2014/01/08/fuck-myself-and-cut-off-hand-now/">
+        <!--再强大的数据库也抵不住自己手贱--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2020 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

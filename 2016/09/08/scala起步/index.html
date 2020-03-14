@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+    <head>
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content="">
+        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png"/>
+        <link rel="canonical" href="http://guolinn.com/">
+        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href="">
+        <title>scala入门 | peteyuan.com</title>
+        <meta name="description" content="{{meta_description}}">
+
+        <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True" />
+        <meta name="MobileOptimized" content="320" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com" /></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <div id="follow-icons">
+              </div>
+<h6><a href="/about">About</a></h6>
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  September 8, 2016
+  
+    <span class="taglist">  &middot; 
+    
+    
+      <a href='/tags/scala/'>scala</a> 
+    
+    </span>
+  
+
+  <h1 class="post-title">scala入门</h1>
+  <section class="post-content article-entry">
+    <p>mac上安装</p>
+<pre class="line-numbers language-bash"><code class="language-bash">brew <span class="token function">install</span> scala
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>配置vim对scala高亮，使用Plugin的方式</p>
+<pre class="line-numbers language-bash"><code class="language-bash">Plugin <span class="token string">'derekwyatt/vim-scala'</span>
+:PluginInstall
+<span class="token keyword">.</span> ~/.vimrc
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>编写helloworld, 新建文件 hello.scala</p>
+<pre class="line-numbers language-scala"><code class="language-scala"><span class="token keyword">object</span> HelloWorld <span class="token punctuation">{</span>
+    <span class="token keyword">def</span> main<span class="token punctuation">(</span>args<span class="token operator">:</span> Array<span class="token punctuation">[</span><span class="token builtin">String</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">Unit</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+        println<span class="token punctuation">(</span><span class="token string">"Hello, World!"</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>运行：</p>
+<pre class="line-numbers language-scala"><code class="language-scala">scala hello<span class="token punctuation">.</span>scala
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h4 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h4><pre class="line-numbers language-bash"><code class="language-bash">scalac hello.scala
+scala HelloWorld
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>还可以给scala指定选项， -d 指定生成的class文件目录</p>
+<pre class="line-numbers language-bash"><code class="language-bash">scalac -d classes hello.scala
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>也可以指定类路径，比如刚刚的类生成在classes文件夹下，运行就这么做：</p>
+<pre class="line-numbers language-bash"><code class="language-bash">scala -cp classes HelloWorld
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>注意： scala的参数必须是top-level对象，如果继承了trait App，那么对象里的所有语句都会被执行，如下。</p>
+<pre class="line-numbers language-scala"><code class="language-scala"><span class="token keyword">object</span> HelloWorld <span class="token keyword">extends</span> App <span class="token punctuation">{</span>
+    println<span class="token punctuation">(</span><span class="token string">"Hello, World!"</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>否则的话，就要像前面的例子一样定义main方法。</p>
+<h4 id="交互式运行"><a href="#交互式运行" class="headerlink" title="交互式运行"></a>交互式运行</h4><p>在shell中输入代码：</p>
+<pre class="line-numbers language-bash"><code class="language-bash">localhost:~ yuandingping$ scala
+Welcome to Scala 2.11.8 <span class="token punctuation">(</span>Java HotSpot<span class="token punctuation">(</span>TM<span class="token punctuation">)</span> 64-Bit Server VM, Java 1.8.0_91<span class="token punctuation">)</span>.
+Type <span class="token keyword">in</span> expressions <span class="token keyword">for</span> evaluation. Or try :help.
+
+scala<span class="token operator">></span> object HelloWorld <span class="token punctuation">{</span>
+     <span class="token operator">|</span>     def main<span class="token punctuation">(</span>args: Array<span class="token punctuation">[</span>String<span class="token punctuation">]</span><span class="token punctuation">)</span>: Unit <span class="token operator">=</span> <span class="token punctuation">{</span>
+     <span class="token operator">|</span>         println<span class="token punctuation">(</span><span class="token string">"Hello, World!"</span><span class="token punctuation">)</span>
+     <span class="token operator">|</span>     <span class="token punctuation">}</span>
+     <span class="token operator">|</span> <span class="token punctuation">}</span>
+defined object HelloWorld
+
+scala<span class="token operator">></span> HelloWorld.main<span class="token punctuation">(</span>Array<span class="token punctuation">(</span><span class="token punctuation">))</span>
+Hello, World<span class="token operator">!</span>
+
+scala<span class="token operator">></span> q
+<span class="token operator">&lt;</span>console<span class="token operator">></span>:12: error: not found: value q
+       q
+       ^
+
+scala<span class="token operator">></span> :q
+localhost:~ yuandingping$
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>:q 表示退出scala环境。</p>
+<h4 id="脚本运行"><a href="#脚本运行" class="headerlink" title="脚本运行"></a>脚本运行</h4><p>scala还可以运行在脚本中， 比如script.sh:</p>
+<pre class="line-numbers language-bash"><code class="language-bash"><span class="token comment" spellcheck="true">#!/usr/bin/env scala</span>
+object HelloWorld extends App <span class="token punctuation">{</span>
+    println<span class="token punctuation">(</span><span class="token string">"Hello, World!"</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>运行：</p>
+<pre class="line-numbers language-bash"><code class="language-bash">./script.sh
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>注意： script.sh必须有可执行权限，且scala命令加入了类路径</p>
+<p>貌似下面的执行方法是不对的:</p>
+<pre class="line-numbers language-bash"><code class="language-bash">sh script.sh
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>但是可以这样:</p>
+<pre class="line-numbers language-bash"><code class="language-bash">scala script.sh
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>以上<br><a href="http://www.scala-lang.org/documentation/getting-started.html" target="_blank" rel="noopener">原文链接</a></p>
+<p>scala一般使用sbt管理工程，执行编译构建等工作:</p>
+<pre class="line-numbers language-bash"><code class="language-bash">brew <span class="token function">install</span> sbt
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>这里有很多scala的学习资料： </p>
+<ul>
+<li><a href="https://twitter.github.io/scala_school/zh_cn/" target="_blank" rel="noopener">scala课堂</a></li>
+<li><a href="http://docs.scala-lang.org/zh-cn/overviews/" target="_blank" rel="noopener">官方文档</a> </li>
+<li><a href="http://docs.scala-lang.org/tutorials/" target="_blank" rel="noopener">A Tour of Scala</a></li>
+</ul>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2016/09/09/nsq起步/">
+        ← prev <!--nsq-quick-start-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2016/09/08/golang操作mysql指南/">
+        <!--golang操作mysql教程--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2020 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

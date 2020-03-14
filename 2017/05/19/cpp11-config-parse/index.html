@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+    <head>
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content="">
+        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png"/>
+        <link rel="canonical" href="http://guolinn.com/">
+        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href="">
+        <title>配置解析类 | peteyuan.com</title>
+        <meta name="description" content="{{meta_description}}">
+
+        <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True" />
+        <meta name="MobileOptimized" content="320" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com" /></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <div id="follow-icons">
+              </div>
+<h6><a href="/about">About</a></h6>
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  May 19, 2017
+  
+    <span class="taglist">  &middot; 
+    
+    
+      <a href='/tags/C/'>C++</a> 
+    
+    </span>
+  
+
+  <h1 class="post-title">配置解析类</h1>
+  <section class="post-content article-entry">
+    <p>config.h</p>
+<pre class="line-numbers language-C++"><code class="language-C++">#ifndef CONFIG_H_
+#define CONFIG_H_
+
+#include <string>
+#include <map>
+#include <fstream>
+#include <iostream>
+
+#include <stdlib.h>
+
+using namespace std;
+
+class Config
+{
+public:
+    Config(const char* fileName)
+    {
+        m_fileName.append(fileName);
+        loadFile(fileName);
+    };
+    ~Config(){};
+
+    string getConfig(const char* key)
+    {
+        auto it = m_map.find(key);
+        if (it != m_map.end())
+        {
+            return it->second;
+        }
+        return string("");
+    }
+
+    int getInteger(const char* key)
+    {
+        string value = getConfig(key);
+        if (value.size() == 0)
+        {
+            return -1;
+        }
+        return atoi(value.c_str());
+    }
+
+    void print()
+    {
+        for (auto &kv: m_map)
+        {
+            cout << kv.first << " = " << kv.second << endl;
+        }
+    }
+
+private:
+    void loadFile(const char* fileName)
+    {
+        ifstream fp(fileName);
+        string s;
+        while (!fp.eof())
+        {
+            getline(fp, s);
+            bool readChar = false;
+            int start = 0, end = 0;
+            string key;
+            for (int i = 0; i < s.size(); ++i)
+            {
+                if (s[i] == ' ')
+                {
+                    readChar = false;
+                    continue;
+                }
+                if (s[i] == '#')
+                {
+                    break;
+                }
+                if (s[i] == '=')
+                {
+                    if (end > start)
+                    {
+                        key = s.substr(start, end - (start - 1));
+                    }
+                    readChar = false;
+                    start = end = 0;
+                }
+                if (!readChar) start = i;
+                end = i;
+                readChar = true;
+            }
+            if (end > start)
+            {
+                m_map.insert(make_pair(key, s.substr(start, end - (start - 1))));
+            }
+        }
+    };
+    void reloadFile()
+    {
+        loadFile(m_fileName.c_str());
+    };
+
+    string m_fileName;
+    map<string, string> m_map;
+};
+
+#endif
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>测试 test_config.cpp</p>
+<pre class="line-numbers language-C++"><code class="language-C++">#include "config.h"
+
+int main(int argc, char* argv[])
+{
+    Config config(argv[1]);
+    config.print();
+    cout << config.getConfig("port") << endl;
+    cout << config.getInteger("port") << endl;
+    return 0;
+}
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>运行:</p>
+<pre class="line-numbers language-shell"><code class="language-shell">clang++ -std=c++11 -stdlib=libc++  test_config.cpp
+./a.out example.config
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2017/06/21/perceptron-cpp-implementation/">
+        ← prev <!--感知机学习算法实现-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2017/05/16/uuid-learning-notes/">
+        <!--C++ UUID库--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2020 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

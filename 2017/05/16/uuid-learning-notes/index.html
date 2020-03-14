@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+    <head>
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content="">
+        <link rel="shortcut icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png"/>
+        <link rel="canonical" href="http://guolinn.com/">
+        <link rel="alternate" type="application/rss+xml" title="Pete Yuan" href="">
+        <title>C++ UUID库 | peteyuan.com</title>
+        <meta name="description" content="{{meta_description}}">
+
+        <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True" />
+        <meta name="MobileOptimized" content="320" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Web_of_Spider-Man_Vol_1_129-1.png/250px-Web_of_Spider-Man_Vol_1_129-1.png" alt="peteyuan.com" /></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <div id="follow-icons">
+              </div>
+<h6><a href="/about">About</a></h6>
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  May 16, 2017
+  
+    <span class="taglist">  &middot; 
+    
+    
+      <a href='/tags/c/'>c++</a> 
+    
+    </span>
+  
+
+  <h1 class="post-title">C++ UUID库</h1>
+  <section class="post-content article-entry">
+    <p>库名 libuuid 下载地址<a href="https://sourceforge.net/projects/libuuid/" target="_blank" rel="noopener">https://sourceforge.net/projects/libuuid/</a><br>版本1.0.3<br>运行环境：mac</p>
+<h4 id="接口"><a href="#接口" class="headerlink" title="接口"></a>接口</h4><p>uuid对外定义为一个无符号字符数组,这是一个压缩后的存储</p>
+<pre class="line-numbers language-c"><code class="language-c"><span class="token keyword">typedef</span> <span class="token keyword">unsigned</span> <span class="token keyword">char</span> uuid_t<span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>内部其实是一个结构体</p>
+<pre class="line-numbers language-c"><code class="language-c"><span class="token keyword">struct</span> uuid <span class="token punctuation">{</span>
+    uint32_t    time_low<span class="token punctuation">;</span>
+    uint16_t    time_mid<span class="token punctuation">;</span>
+    uint16_t    time_hi_and_version<span class="token punctuation">;</span>
+    uint16_t    clock_seq<span class="token punctuation">;</span>
+    uint8_t node<span class="token punctuation">[</span><span class="token number">6</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>time_low是一个32位整数，每8位转化成一个无符号字符，占了前面4位，然后是time_mid占2位，time_hi_and_version占2位，clock_seq占2位，最后node数组占6位，一共正好16位。</p>
+<p>提供4个函数生成不同的uuid</p>
+<ul>
+<li>uuid_generate_random  如果有随机设备则利用随机设备生产随机字符串流，否则利用glibc的伪随机函数生成，然后对clock_seq和time_hi_and_version做一些位操作（为什么？）</li>
+<li>uuid_generate_time  和random一样生成随机字符串，然后对clock_seq，然后对clock_sql，time_mid和time_hi_and_version进行位操作</li>
+<li>uuid_generate 根据系统是否提供/dev/random或/dev/urandom伪随机设备，来决定用random还是time构造uuid，linux系统一般提供</li>
+<li>uuid_generate_time_safe 调用了uuid_generate_time_generic，内部使用<a href="https://linux.die.net/man/8/uuidd" target="_blank" rel="noopener">uuid daemon</a>生成uuid</li>
+</ul>
+<p>几个函数获取uuid内部的属性:</p>
+<ul>
+<li>uuid_time  获取基于时间的uuid的时间值</li>
+<li>uuid_type  返回时间或随机</li>
+<li>uuid_variant 返回平台</li>
+</ul>
+<p>构造和打印uuid的函数:</p>
+<ul>
+<li>uuid_unparse 把uuid buf解析成字符串</li>
+<li>uuid_unparse_lower</li>
+<li>uuid_unparse_upper</li>
+<li>uuid_parse 把一个字符串解析成uuid</li>
+</ul>
+<p>操作uuid的几个函数:</p>
+<ul>
+<li>uuid_compare</li>
+<li>uuid_clear</li>
+<li>uuid_copy</li>
+<li>uuid_is_null<br>从名字就可以看出用途，后续给出源码中的test代码。</li>
+</ul>
+<h4 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h4><p>接口</p>
+<pre class="line-numbers language-c"><code class="language-c"><span class="token comment" spellcheck="true">/* clear.c */</span>
+<span class="token keyword">void</span> <span class="token function">uuid_clear</span><span class="token punctuation">(</span>uuid_t uu<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">/* compare.c */</span>
+<span class="token keyword">int</span> <span class="token function">uuid_compare</span><span class="token punctuation">(</span><span class="token keyword">const</span> uuid_t uu1<span class="token punctuation">,</span> <span class="token keyword">const</span> uuid_t uu2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">/* copy.c */</span>
+<span class="token keyword">void</span> <span class="token function">uuid_copy</span><span class="token punctuation">(</span>uuid_t dst<span class="token punctuation">,</span> <span class="token keyword">const</span> uuid_t src<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">/* gen_uuid.c */</span>
+<span class="token keyword">void</span> <span class="token function">uuid_generate</span><span class="token punctuation">(</span>uuid_t out<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">void</span> <span class="token function">uuid_generate_random</span><span class="token punctuation">(</span>uuid_t out<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">void</span> <span class="token function">uuid_generate_time</span><span class="token punctuation">(</span>uuid_t out<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span> <span class="token function">uuid_generate_time_safe</span><span class="token punctuation">(</span>uuid_t out<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">/* isnull.c */</span>
+<span class="token keyword">int</span> <span class="token function">uuid_is_null</span><span class="token punctuation">(</span><span class="token keyword">const</span> uuid_t uu<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">/* parse.c */</span>
+<span class="token keyword">int</span> <span class="token function">uuid_parse</span><span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>in<span class="token punctuation">,</span> uuid_t uu<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">/* unparse.c */</span>
+<span class="token keyword">void</span> <span class="token function">uuid_unparse</span><span class="token punctuation">(</span><span class="token keyword">const</span> uuid_t uu<span class="token punctuation">,</span> <span class="token keyword">char</span> <span class="token operator">*</span>out<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">void</span> <span class="token function">uuid_unparse_lower</span><span class="token punctuation">(</span><span class="token keyword">const</span> uuid_t uu<span class="token punctuation">,</span> <span class="token keyword">char</span> <span class="token operator">*</span>out<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">void</span> <span class="token function">uuid_unparse_upper</span><span class="token punctuation">(</span><span class="token keyword">const</span> uuid_t uu<span class="token punctuation">,</span> <span class="token keyword">char</span> <span class="token operator">*</span>out<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">/* uuid_time.c */</span>
+time_t <span class="token function">uuid_time</span><span class="token punctuation">(</span><span class="token keyword">const</span> uuid_t uu<span class="token punctuation">,</span> <span class="token keyword">struct</span> timeval <span class="token operator">*</span>ret_tv<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span> <span class="token function">uuid_type</span><span class="token punctuation">(</span><span class="token keyword">const</span> uuid_t uu<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">int</span> <span class="token function">uuid_variant</span><span class="token punctuation">(</span><span class="token keyword">const</span> uuid_t uu<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>源码中包含的test代码：</p>
+<pre class="line-numbers language-c"><code class="language-c"><span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;stdio.h></span></span>
+<span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;stdlib.h></span></span>
+
+<span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">"uuid.h"</span></span>
+
+<span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">test_uuid</span><span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span> uuid<span class="token punctuation">,</span> <span class="token keyword">int</span> isValid<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">static</span> <span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span> validStr<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">"invalid"</span><span class="token punctuation">,</span> <span class="token string">"valid"</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+    uuid_t uuidBits<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> parsedOk<span class="token punctuation">;</span>
+
+    parsedOk <span class="token operator">=</span> <span class="token function">uuid_parse</span><span class="token punctuation">(</span>uuid<span class="token punctuation">,</span> uuidBits<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"%s is %s"</span><span class="token punctuation">,</span> uuid<span class="token punctuation">,</span> validStr<span class="token punctuation">[</span>isValid<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>parsedOk <span class="token operator">!=</span> isValid<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">" but uuid_parse says %s\n"</span><span class="token punctuation">,</span> validStr<span class="token punctuation">[</span>parsedOk<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">", OK\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">int</span>
+<span class="token function">main</span><span class="token punctuation">(</span><span class="token keyword">int</span> argc <span class="token function">ATTR</span><span class="token punctuation">(</span><span class="token punctuation">(</span>unused<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">,</span> <span class="token keyword">char</span> <span class="token operator">*</span><span class="token operator">*</span>argv <span class="token function">ATTR</span><span class="token punctuation">(</span><span class="token punctuation">(</span>unused<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    uuid_t      buf<span class="token punctuation">,</span> tst<span class="token punctuation">;</span>
+    <span class="token keyword">char</span>        str<span class="token punctuation">[</span><span class="token number">100</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token keyword">struct</span> timeval  tv<span class="token punctuation">;</span>
+    time_t      time_reg<span class="token punctuation">;</span>
+    <span class="token keyword">unsigned</span> <span class="token keyword">char</span>   <span class="token operator">*</span>cp<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> i<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> failed <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">int</span> type<span class="token punctuation">,</span> variant<span class="token punctuation">;</span>
+
+    <span class="token function">uuid_generate</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">uuid_unparse</span><span class="token punctuation">(</span>buf<span class="token punctuation">,</span> str<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID generate = %s\n"</span><span class="token punctuation">,</span> str<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID: "</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>i<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">,</span> cp <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">unsigned</span> <span class="token keyword">char</span> <span class="token operator">*</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>buf<span class="token punctuation">;</span> i <span class="token operator">&lt;</span> <span class="token number">16</span><span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"%02x"</span><span class="token punctuation">,</span> <span class="token operator">*</span>cp<span class="token operator">++</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    type <span class="token operator">=</span> <span class="token function">uuid_type</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span><span class="token punctuation">;</span>  variant <span class="token operator">=</span> <span class="token function">uuid_variant</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID type = %d, UUID variant = %d\n"</span><span class="token punctuation">,</span> type<span class="token punctuation">,</span> variant<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>variant <span class="token operator">!=</span> UUID_VARIANT_DCE<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"Incorrect UUID Variant; was expecting DCE!\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        failed<span class="token operator">++</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token function">uuid_generate_random</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">uuid_unparse</span><span class="token punctuation">(</span>buf<span class="token punctuation">,</span> str<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID random string = %s\n"</span><span class="token punctuation">,</span> str<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID: "</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>i<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">,</span> cp <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">unsigned</span> <span class="token keyword">char</span> <span class="token operator">*</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>buf<span class="token punctuation">;</span> i <span class="token operator">&lt;</span> <span class="token number">16</span><span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"%02x"</span><span class="token punctuation">,</span> <span class="token operator">*</span>cp<span class="token operator">++</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    type <span class="token operator">=</span> <span class="token function">uuid_type</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span><span class="token punctuation">;</span>  variant <span class="token operator">=</span> <span class="token function">uuid_variant</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID type = %d, UUID variant = %d\n"</span><span class="token punctuation">,</span> type<span class="token punctuation">,</span> variant<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>variant <span class="token operator">!=</span> UUID_VARIANT_DCE<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"Incorrect UUID Variant; was expecting DCE!\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        failed<span class="token operator">++</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>type <span class="token operator">!=</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"Incorrect UUID type; was expecting "</span>
+               <span class="token string">"4 (random type)!\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        failed<span class="token operator">++</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token function">uuid_generate_time</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">uuid_unparse</span><span class="token punctuation">(</span>buf<span class="token punctuation">,</span> str<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID string = %s\n"</span><span class="token punctuation">,</span> str<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID time: "</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>i<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">,</span> cp <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">unsigned</span> <span class="token keyword">char</span> <span class="token operator">*</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span>buf<span class="token punctuation">;</span> i <span class="token operator">&lt;</span> <span class="token number">16</span><span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"%02x"</span><span class="token punctuation">,</span> <span class="token operator">*</span>cp<span class="token operator">++</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    type <span class="token operator">=</span> <span class="token function">uuid_type</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span><span class="token punctuation">;</span>  variant <span class="token operator">=</span> <span class="token function">uuid_variant</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID type = %d, UUID variant = %d\n"</span><span class="token punctuation">,</span> type<span class="token punctuation">,</span> variant<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>variant <span class="token operator">!=</span> UUID_VARIANT_DCE<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"Incorrect UUID Variant; was expecting DCE!\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        failed<span class="token operator">++</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>type <span class="token operator">!=</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"Incorrect UUID type; was expecting "</span>
+               <span class="token string">"1 (time-based type)!\\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        failed<span class="token operator">++</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>    
+    tv<span class="token punctuation">.</span>tv_sec <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    tv<span class="token punctuation">.</span>tv_usec <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    time_reg <span class="token operator">=</span> <span class="token function">uuid_time</span><span class="token punctuation">(</span>buf<span class="token punctuation">,</span> <span class="token operator">&amp;</span>tv<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID time is: (%ld, %ld): %s\n"</span><span class="token punctuation">,</span> tv<span class="token punctuation">.</span>tv_sec<span class="token punctuation">,</span> tv<span class="token punctuation">.</span>tv_usec<span class="token punctuation">,</span>
+           <span class="token function">ctime</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>time_reg<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">uuid_parse</span><span class="token punctuation">(</span>str<span class="token punctuation">,</span> tst<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">uuid_compare</span><span class="token punctuation">(</span>buf<span class="token punctuation">,</span> tst<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID parse and compare succeeded.\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID parse and compare failed!\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        failed<span class="token operator">++</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token function">uuid_clear</span><span class="token punctuation">(</span>tst<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">uuid_is_null</span><span class="token punctuation">(</span>tst<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID clear and is null succeeded.\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID clear and is null failed!\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        failed<span class="token operator">++</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token function">uuid_copy</span><span class="token punctuation">(</span>buf<span class="token punctuation">,</span> tst<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">uuid_compare</span><span class="token punctuation">(</span>buf<span class="token punctuation">,</span> tst<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID copy and compare succeeded.\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"UUID copy and compare failed!\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        failed<span class="token operator">++</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    failed <span class="token operator">+</span><span class="token operator">=</span> <span class="token function">test_uuid</span><span class="token punctuation">(</span><span class="token string">"84949cc5-4701-4a84-895b-354c584a981b"</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    failed <span class="token operator">+</span><span class="token operator">=</span> <span class="token function">test_uuid</span><span class="token punctuation">(</span><span class="token string">"84949CC5-4701-4A84-895B-354C584A981B"</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    failed <span class="token operator">+</span><span class="token operator">=</span> <span class="token function">test_uuid</span><span class="token punctuation">(</span><span class="token string">"84949cc5-4701-4a84-895b-354c584a981bc"</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    failed <span class="token operator">+</span><span class="token operator">=</span> <span class="token function">test_uuid</span><span class="token punctuation">(</span><span class="token string">"84949cc5-4701-4a84-895b-354c584a981"</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    failed <span class="token operator">+</span><span class="token operator">=</span> <span class="token function">test_uuid</span><span class="token punctuation">(</span><span class="token string">"84949cc5x4701-4a84-895b-354c584a981b"</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    failed <span class="token operator">+</span><span class="token operator">=</span> <span class="token function">test_uuid</span><span class="token punctuation">(</span><span class="token string">"84949cc504701-4a84-895b-354c584a981b"</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    failed <span class="token operator">+</span><span class="token operator">=</span> <span class="token function">test_uuid</span><span class="token punctuation">(</span><span class="token string">"84949cc5-470104a84-895b-354c584a981b"</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    failed <span class="token operator">+</span><span class="token operator">=</span> <span class="token function">test_uuid</span><span class="token punctuation">(</span><span class="token string">"84949cc5-4701-4a840895b-354c584a981b"</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    failed <span class="token operator">+</span><span class="token operator">=</span> <span class="token function">test_uuid</span><span class="token punctuation">(</span><span class="token string">"84949cc5-4701-4a84-895b0354c584a981b"</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    failed <span class="token operator">+</span><span class="token operator">=</span> <span class="token function">test_uuid</span><span class="token punctuation">(</span><span class="token string">"g4949cc5-4701-4a84-895b-354c584a981b"</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    failed <span class="token operator">+</span><span class="token operator">=</span> <span class="token function">test_uuid</span><span class="token punctuation">(</span><span class="token string">"84949cc5-4701-4a84-895b-354c584a981g"</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>failed<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"%d failures.\n"</span><span class="token punctuation">,</span> failed<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">exit</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>运行命令：<code>gcc test_uuid.c -I uuid.h .libs/libuuid.a</code><br>输出结果</p>
+<pre class="line-numbers language-shell"><code class="language-shell">UUID generate = dda308b8-92b7-425e-a0e9-5d3549b0a21d
+UUID: dda308b892b7425ea0e95d3549b0a21d
+UUID type = 4, UUID variant = 1
+
+UUID random string = 5351ce55-18d0-4559-874e-db90d56a85a5
+UUID: 5351ce5518d04559874edb90d56a85a5
+UUID type = 4, UUID variant = 1
+
+UUID string = dfb68e3a-39f6-11e7-ac17-555bc85646d4
+UUID time: dfb68e3a39f611e7ac17555bc85646d4
+UUID type = 1, UUID variant = 1
+UUID time is: (1494911813, 611065): Tue May 16 13:16:53 2017
+
+UUID parse and compare succeeded.
+UUID clear and is null succeeded.
+UUID copy and compare succeeded.
+84949cc5-4701-4a84-895b-354c584a981b is valid, OK
+84949CC5-4701-4A84-895B-354C584A981B is valid, OK
+84949cc5-4701-4a84-895b-354c584a981bc is invalid, OK
+84949cc5-4701-4a84-895b-354c584a981 is invalid, OK
+84949cc5x4701-4a84-895b-354c584a981b is invalid, OK
+84949cc504701-4a84-895b-354c584a981b is invalid, OK
+84949cc5-470104a84-895b-354c584a981b is invalid, OK
+84949cc5-4701-4a840895b-354c584a981b is invalid, OK
+84949cc5-4701-4a84-895b0354c584a981b is invalid, OK
+g4949cc5-4701-4a84-895b-354c584a981b is invalid, OK
+84949cc5-4701-4a84-895b-354c584a981g is invalid, O
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h4><p>./configure,make编译<br>简单代码示例:</p>
+<pre class="line-numbers language-c++"><code class="language-c++">#include <iostream>
+#include "uuid.h"
+
+using namespace std;
+
+int main(int argc, char* argv[])
+{
+    uuid_t id1;
+    char str[100];
+
+    /* 生成uuid */
+    uuid_generate(id1);
+    uuid_unparse(id1, str);
+    cout << str << endl;
+    return 0;
+}
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>编译：<code>clang++ check.cpp -I uuid.h .libs/libuuid.a</code></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2017/05/19/cpp11-config-parse/">
+        ← prev <!--配置解析类-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2017/05/10/在线编译工具/">
+        <!--在线编译工具--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2020 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+
