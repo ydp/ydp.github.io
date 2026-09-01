@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2017/05/10/C++11之类型推导/">
+        <title>C++11之类型推导 | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">May 10, 2017</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/cpp/">cpp</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">C++11之类型推导</h1>
+  <section class="post-content article-entry">
+    <h3 id="1-auto类型推导"><a href="#1-auto类型推导" class="headerlink" title="1 auto类型推导"></a>1 auto类型推导</h3><p>C++的隐式类型定义是在编译器推导, auto并不能代表实际的类型声明，只是一个类型声明的”占位符”。</p>
+<p>在老的标准中已经有auto这个关键字了，不过一般都省略掉，它的含义是与static相对的。</p>
+<h3 id="2-std-function-和-std-bind"><a href="#2-std-function-和-std-bind" class="headerlink" title="2 std::function 和 std::bind"></a>2 std::function 和 std::bind</h3><p>std::function 是一个类模板</p>
+<pre class="line-numbers language-C++"><code class="language-C++">#include<iostream>
+#include<functional>
+
+void func(void)
+{
+    std::cout << __FUNCTION__ << std::endl;
+}
+
+class Foo
+{
+public:
+    static int foo_func(int a)
+    {
+        std::cout << __FUNCTION__ <<  "(" << a << ")" << std::endl;
+        return a;
+    }
+};
+
+/// 仿函数（函数对象）
+class Bar
+{
+public:
+    int operator()(int a)
+    {
+        std::cout << __FUNCTION__ << "(" << a << ")" << std::endl;
+        return a;
+    }
+};
+
+int main(void)
+{
+    std::function<void(void)> fr1 = func;
+    fr1();
+
+    std::function<int(int)> fr2 = Foo::foo_func;
+    std::cout << fr2(123) << std::endl;
+
+    Bar bar;
+    fr2 = bar;
+    std::cout << fr2(456) << std::endl;
+
+    return 0;
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></int(int)></void(void)></functional></iostream></code></pre>
+<p>std::function作为回调函数的例子</p>
+<pre class="line-numbers language-C++"><code class="language-C++">#include <iostream>
+#include <functional>
+
+class A
+{
+    std::function<void()> callback_;
+
+public:
+    A(const std::function<void()>& f)
+        : callback_(f)
+        {
+        }
+
+    void notify(void)
+    {
+        callback_();
+    }
+};
+
+class Foo
+{
+public:
+    void operator()(void)
+    {
+        std::cout << __FUNCTION__ << std::endl;
+    }
+};
+
+int main(void)
+{
+    Foo foo;
+    A aa(foo);
+    aa.notify();
+
+    return 0;
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></void()></void()></functional></iostream></code></pre>
+<p>std::function还可以作为函数入参</p>
+<pre class="line-numbers language-C++"><code class="language-C++">#include <iostream>
+#include <functional>
+
+void call_when_even(int x, const std::function<void(int)>& f)
+{
+    if (!(x & 1))
+    {
+        f(x);
+    }
+}
+
+void output(int x)
+{
+    std::cout << x << " ";
+}
+
+int main(void)
+{
+    for(int i = 0; i < 10; ++I)
+    {
+        call_when_even(i, output);
+    }
+    std::cout << std::endl;
+    return 0;
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></void(int)></functional></iostream></code></pre>
+<p>总体来说就是替代函数指针的作用</p>
+<h3 id="3-lambda"><a href="#3-lambda" class="headerlink" title="3 lambda"></a>3 lambda</h3>
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2017/05/10/在线编译工具/">
+        ← prev <!--在线编译工具-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2017/05/09/golang学习笔记/">
+        <!--golang学习笔记--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

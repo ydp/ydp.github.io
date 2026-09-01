@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2011/07/09/loading-problem/">
+        <title>装载问题 | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">July 9, 2011</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/算法/">算法</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">装载问题</h1>
+  <section class="post-content article-entry">
+    <p>有一批共n个集装箱要装上2艘载重量分别为c1和c2的轮船，其中集装箱i的重量为wi，且w1+w2+…+wn&lt;=c1+c2。</p>
+<p>装载问题要求确定，是否有一个合理的装载方案可将这n个集装箱装上这2搜轮船。如果有，找出一种方案。</p>
+<p>分析：如果一个给定的装载问题有解，则采用下面的策略可以得到最有装载方案。</p>
+<p>（1）首先将第一艘轮船尽可能装满；（2）然后将剩余的集装箱装上第二艘轮船。</p>
+<p>将第一艘轮船装满等价于选取全体集装箱的一个子集，使该子集的集装箱重量之和最接近c1。</p>
+<p>递归回溯</p>
+<pre class="line-numbers language-C++"><code class="language-C++">#include <iostream>  
+using namespace std;  
+
+typedef int Type;  
+
+template<typename type> class Loading;  
+template<typename type>  
+Type MaxLoading(Type w[], Type c, int n, int bestx[]);  
+
+template<typename type>  
+class Loading  
+{  
+public:  
+    friend Type MaxLoading<type>(Type w[], Type c, int n, int bestx[]);  
+private:  
+    void Backtrack(int i);  
+    int n,          //集装箱数  
+        *x,         //当前解  
+        *bestx;     //当前最优解  
+    Type* w,        //集装箱重量数组  
+        c,          //第一艘轮船的载重量  
+        cw,         //当前载重量  
+        bestw,      //当前最优载重量  
+        r;          //剩余集装箱重量  
+};  
+
+template<typename type>  
+void Loading<type>::Backtrack(int i)  
+{//搜索第i层结点  
+    if(i>n)  
+    {//到达叶结点  
+        if(cw>bestw)  
+        {  
+            for(int j=1; j<=n; ++j) bestx[j]="x[j];" bestw="cw;" } return; 搜索子树 r -="w[i];" 当前处理的是第i个集装箱，r是i个之后所有集装箱的重量和，所以深入一层之后要减去此箱重量 if(cw+w[i] <="c)" { 搜索左子树 x[i]="1;" cw+="w[i];" backtrack(i+1); cw-="w[i];" 搜索右子树 if(cw+r> bestw)  
+    {  
+        x[i]=0;  
+        Backtrack(i+1);  
+    }  
+    r += w[i];//处理完右子树 回上一层时要加上这层的重量  
+}  
+
+
+template<typename type>  
+Type MaxLoading(Type w[], Type c, int n, int bestx[])  
+{//返回最优载重量  
+    Loading<type> X;  
+    //初始化X  
+    X.x = new int[n+1];  
+    X.w = w;  
+    X.c = c;  
+    X.n = n;  
+    X.bestx = bestx;  
+    X.bestw = 0;  
+    X.cw = 0;  
+    //初始化r  
+    X.r = 0;  
+    for(int i=1; i<=n; ++i) x.r +="w[i];" x.backtrack(1); delete [] x.x; return x.bestw; } int main(int argc, char* argv[]) { n; type c; cout << "输入集装箱数目:" endl; cin>> n;  
+    Type *w=new Type[n+1];  
+    int *bestx=new Type[n+1];  
+    cout<<"输入"<<n<<"个质量数:"<<endl; for(int i="1;i<=n;i++)" cin>>w[i];  
+    cout << "输入第一艘轮船的载重量c：" << endl;  
+    cin >> c;  
+
+    cout << MaxLoading<type>(w, c, n, bestx) << endl;  
+
+    for(int i=1; i<=n; ++i) cout<< bestx[i] << ","; cout "press the enter key to exit"; cin.ignore(cin.rdbuf()->in_avail()+1);  
+    return 0;  
+}  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></=n;></type></"输入"<<n<<"个质量数:"<<endl;></=n;></type></typename></=n;></type></typename></type></typename></typename></typename></iostream></code></pre>
+<p>迭代回溯</p>
+<pre class="line-numbers language-C++"><code class="language-C++">#include<iostream>  
+using namespace std;  
+
+typedef int Type;  
+
+template<typename type>  
+Type MaxLoading(Type w[], Type c, int n, int bestx[])  
+{//迭代回溯法  
+    //返回最优载重量及其相应解  
+    //初始化根结点  
+    int i=1; //当前层  
+    // x[1:i-1]为当前路径  
+    int *x = new int[n+1];  
+    Type bestw=0,       //当前最优载重量  
+        cw=0,           //当前载重量  
+        r=0;            //剩余集装箱重量  
+    for(int j=1; j<=n; ++j) r+="w[j];" 搜索子树 while(true) { while(i<="n" && cw+w[i]<="c)" 进入左子树 r-="w[i];" cw+="w[i];" x[i]="1;" i++; } if(i>n)  
+        {//到达叶结点  
+            for(int j=1; j<=n; ++j) bestx[j]="x[j];" bestw="cw;" }else { 进入右子树 r-="w[i];" x[i]="0;" i++; } while(cw+r<="bestw)" 当前最优载重量>= 当前载重量 + 剩余集装箱重量  
+        {//剪枝回溯  
+            i--;  
+            while(i>0 && !x[i])  
+            {//从右子树返回  
+                r+=w[i];  
+                i--;  
+            }  
+            if(i==0)  
+            {  
+                delete [] x;  
+                return bestw;  
+            }  
+            //进入右子树  
+            x[i]=0;  
+            cw-=w[i];  
+            i++;  
+        }  
+    }  
+}  
+
+int main(int argc, char* argv[])  
+{  
+    int n;  
+    Type c;  
+    cout << "输入集装箱数目:" << endl;  
+    cin >> n;  
+    Type *w=new Type[n+1];  
+    int *bestx=new Type[n+1];  
+    cout<<"输入"<<n<<"个质量数:"<<endl; for(int i="1;i<=n;i++)" cin>>w[i];  
+    cout << "输入第一艘轮船的载重量c：" << endl;  
+    cin >> c;  
+
+    cout << MaxLoading<type>(w, c, n, bestx) << endl;  
+
+    for(int i=1; i<=n; ++i) cout<< bestx[i] << ","; cout "press the enter key to exit"; cin.ignore(cin.rdbuf()->in_avail()+1);  
+    return 0;  
+}  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></=n;></type></"输入"<<n<<"个质量数:"<<endl;></=n;></=n;></typename></iostream></code></pre>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2012/03/05/map-reduce-function-by-cpp/">
+        ← prev <!--map reduce c++小程序-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

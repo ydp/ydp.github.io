@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2023/02/20/理解linux内核3-filesystem/">
+        <title>理解linux内核3-filesystem | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">February 20, 2023</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/linux/">linux</a><a href="/tags/kernel/">kernel</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">理解linux内核3-filesystem</h1>
+  <section class="post-content article-entry">
+    <p>文章纯属个人理解，可能有误！</p>
+<p>理解linux文件系统，需要清楚几个点：</p>
+<ul>
+<li><p>文件系统的作用？</p>
+</li>
+<li><p>文件是如何在硬盘上存取的？</p>
+</li>
+<li><p>文件系统和块设备之间的关系？</p>
+</li>
+<li><p>为什么有VFS？</p>
+</li>
+</ul>
+<p><strong>文件系统的作用</strong></p>
+<p>理解文件系统的作用，可以思考一个问题。假如没有文件系统，我们应该如何读写硬盘？如果没有文件系统，那就没有文件和目录的概念，硬盘对于我们来说就是一块可以连续读写的字节序列存储介质。假如我们有一些数据需要存储，我们需要知道磁盘上的扇区和磁道，调用磁盘驱动程序，把这些数据存储到对应的位置，这里，既需要注意不要把磁盘上已有的内容覆盖掉，又要知道下次需要读取这些数据的时候，应该从哪个地方读取多少内容，这个过程都只能手动实现。</p>
+<p>所以，文件系统实际上是帮我们把硬盘这种块设备，以某种方式进行组织，并且帮忙我们更好的存储和索引数据，这里既要能存取数据，又要能很方便的索引，于是文件系统既有供用户使用的逻辑结构，包括目录和文件，也有内部的文件数据组织方式，包括：超级块、inode及inode表，数据块等。</p>
+<p><img src="/images/wechat/%E7%90%86%E8%A7%A3linux%E5%86%85%E6%A0%B83-filesystem/img01.png" alt></p>
+<p><strong>文件是如何在硬盘上存取的</strong></p>
+<p>根据理解linux内核（第16章）书中的描述，在linux中访问普通文件的过程直接和page cache相关，当read系统调用执行时，这个调用会是阻塞状态，直到数据被拷贝到用户地址空间，当write系统调用执行时，数据被写入page cache。而读取文件，总是以page为单位，内核每次都会把page大小整数倍的数据返回给read调用，如果当进程执行read时这些文件数据不在内存中，那么内核会分配一个新的page frame，把对应的数据写入这个page，然后把这个page加入到page cache里面去，最后再把这些数据拷贝到用户进程地址空间。读取文件大致就是在块设备上找到这个文件对应的数据到底存储在哪个块上面。一旦这个数据块被定为之后，内核就会调用块设备的IO操作接口去填充新的page。这个过程对应到linux代码中就是generic_file_read。</p>
+<p><strong>文件系统和块设备之间的关系</strong></p>
+<p>我们在安装操作系统，或者使用一块新的硬盘的时候，一般会有2个操作</p>
+<ul>
+<li><p>格式化/初始化文件系统</p>
+</li>
+<li><p>挂载mount硬盘设备</p>
+</li>
+</ul>
+<p>在linux中，这分别对应mkfs.ext4和mount两个命令。而这两个命令就揭示了文件系统和设备之间的关系，并且，在使用cloud init进行操作系统初始化，挂载硬盘的时候，它也是分为2个不同的配置：</p>
+<pre class="line-numbers language-javascript"><code class="language-javascript">fs_setup<span class="token punctuation">:</span>
+  <span class="token operator">-</span> label<span class="token punctuation">:</span> nvme0
+    filesystem<span class="token punctuation">:</span> <span class="token string">'ext4'</span>
+    device<span class="token punctuation">:</span> <span class="token string">'/dev/nvme0'</span>
+  <span class="token operator">-</span> label<span class="token punctuation">:</span> nvme1
+    filesystem<span class="token punctuation">:</span> <span class="token string">'ext4'</span>
+    device<span class="token punctuation">:</span> <span class="token string">'/dev/nvme1'</span>
+mounts<span class="token punctuation">:</span>
+ <span class="token operator">-</span> <span class="token punctuation">[</span> <span class="token operator">/</span>dev<span class="token operator">/</span>nvme0<span class="token punctuation">,</span> <span class="token operator">/</span>data0 <span class="token punctuation">]</span>
+ <span class="token operator">-</span> <span class="token punctuation">[</span> <span class="token operator">/</span>dev<span class="token operator">/</span>nvme1<span class="token punctuation">,</span> <span class="token operator">/</span>data1 <span class="token punctuation">]</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>当我们把一个硬盘格式化为某个文件系统的时候，实际上就是把这个硬盘初始化为某个文件系统，意思就是把这块硬盘按照指定的文件系统所要求的数数据块组织方式进行初始化，写入超级块、描述符、数据块位图、inode位图、inode表等，从这里我们也可以看出，当一个文件系统初始化的时候，它就决定了这块硬盘上的数据组织方式，比如每个数据块的大小一般为4K，而inode数也决定了到底可以创建多少文件及目录。</p>
+<p>如果硬盘仅仅是格式化了，在linux中是不能直接访问的，还必须挂载到文件系统中的某个目录，这是因为linux只有一个根文件系统，这就是所谓的VFS，而linux本身支持多种文件系统类型，而每一种文件系统，对它的访问都必须通过VFS。</p>
+<p><strong>为什么有VFS?</strong></p>
+<p>显然，VFS是一种非常好的抽象：</p>
+<ul>
+<li><p>定义了一套文件系统的通用访问接口，支持linux的文件系统都必须实现VFS的接口</p>
+</li>
+<li><p>把文件和目录做了统一，这样访问文件和目录就只需要一个接口</p>
+</li>
+<li><p>不同的文件系统可以在linux中共存，甚至包括网络文件系统，以及一些特殊文件系统，真正实现了一切皆文件的思想</p>
+</li>
+</ul>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/UFwPpFsJMVdLUkMyyBRzVw" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2023/02/25/温哥华驾照考试流水账/">
+        ← prev <!--温哥华驾照考试流水账-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2023/02/12/理解linux内核2-内存管理/">
+        <!--理解linux内核2-内存管理--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

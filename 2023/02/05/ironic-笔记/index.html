@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2023/02/05/ironic-笔记/">
+        <title>ironic 笔记 | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">February 5, 2023</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/bare-metal/">bare-metal</a><a href="/tags/openstack/">openstack</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">ironic 笔记</h1>
+  <section class="post-content article-entry">
+    <p>最近研究了一下ironic这个项目，算是进入了一个全新的技术领域，它属于openstack技术生态，但好像对于我来说，不如swift那么有名，却非常重要，尤其是在bare metal场景里。</p>
+<p><img src="/images/wechat/ironic-%E7%AC%94%E8%AE%B0/img01.jpg" alt></p>
+<p>简单说，ironic可以在bare metal上安装OS。但实际上，安装OS这个技术却比较古老。</p>
+<p>首先，这里安装OS是远程通过网络安装，所以它是有一些条件。第一，安装操作系统是属于网卡的功能，在BIOS里可以找到网卡的设置，它必须是开启状态，后面的操作才有可能。</p>
+<p>其次，远程安装OS本身是一个商业需要，它已经有非常成熟的标准协议和实现，所有商用的机器出厂的时候，都实现了IPMI接口（更新的标准接口叫redfish，它们的区别不影响此处的理解），比如Dell的idrac、或者supermicro的机器，当你系统插电接入网线后，你都可以通过一个初始化系统登录到这些机器的管理系统，这个管理系统不仅有一些BIOS设置，更重要的是它底层实现了IPMI接口，我们可以远程通过ipmitool 客户端访问IPMI接口，从而控制这个机器。</p>
+<p>这里的控制实际只是几个简单的几个命令，但和前面的网卡启动功能（PXE）结合，它就可以完美实现网络安装OS。主要的命令有2个：</p>
+<ul>
+<li><p>设置系统启动项为pxe优先（一般我们的电脑是硬盘启动优先） ，这里可以设置为临时（仅生效一次），或永久生效</p>
+</li>
+<li><p>重启系统</p>
+</li>
+</ul>
+<p>PXE的主要功能就是，启动之后会向当前网络，发送一个DHCP广播，如果这个网络里有配置了pxe booting server的DHCP服务器，这个DHCP服务机会返回给网卡一个next server地址，这个next server是一个ftp服务器，这个ftp服务器上需要存在2个文件，kernel和ramdisk，当网卡接收到这2个文件之后就可以开始启动系统了。</p>
+<p>这里说的DHCP服务，是可以通过安装dnsmasq软件来实现的，dnsmasq它不仅是一个dns服务器，同时也是一个dhcp服务器，还可以作为ftp服务器。</p>
+<p>从以上介绍的内容，可以看到，只有网卡配置合适，当前网络里安装好了dnsmasq服务，并且把系统的kernel及ramdisk文件放到ftp服务器上，那么远程安装OS就“很简单”。</p>
+<p>但实际上要真正能做到通用，还需要更好的设计，对于上面的过程，有很多问题产生：</p>
+<ul>
+<li><p>系统的kernel和ramdisk哪儿来？</p>
+</li>
+<li><p>系统初始化磁盘如何设置？</p>
+</li>
+<li><p>如果不是一个IPMI和redfish接口的机器呢？</p>
+</li>
+<li><p>如果知道机器安装的状态，怎样才算安装完成？</p>
+</li>
+<li><p>如果想在机器启动的时候做一些初始化操作，该怎么办？</p>
+</li>
+</ul>
+<p>上面这些问题，都可以像前面的步骤通过手动的方式解决，但如果是批量的操作工作量就会非常大，所以ironic把这些都考虑到了。</p>
+<p>基本上，使用ironic安装系统分为2个步骤：</p>
+<ul>
+<li><p>enroll，相当于是先把这台机器纳入管理</p>
+</li>
+<li><p>deploy，只有enroll以后的机器，ironic才能给他deploy OS</p>
+</li>
+</ul>
+<p>这2个步骤会把所有的机器，在ironic里称为node，标记为各种状态，这里有一个官方的状态图：</p>
+<p><a href="https://docs.openstack.org/ironic/latest/user/states.html" target="_blank" rel="noopener">https://docs.openstack.org/ironic/latest/user/states.html</a></p>
+<p>在enroll阶段，它会把机器相关的信息，包括IPMI credentials存到db，然后用户可以对这些机器做一些inspecting，获取一些硬件信息更新到db，需要用户再执行两个命令，才能让node处于available状态，处于available状态的node，就可以执行deploy命令。</p>
+<p>执行deploy命令，它首先会发送2个IPMI命令给机器：</p>
+<ul>
+<li><p>设置系统启动项以pxe优先</p>
+</li>
+<li><p>重启系统</p>
+</li>
+</ul>
+<p>当机器起来以后，它会去获取ironic定制的kernel和ramdisk，叫IPA(Ironic Python Agent)，这个ramdisk运行起来之后，它就类似于一个简单的OS，但是里面有内置的Ironic的agent会去和ironic service通信，然后做一些安装OS必要的准备工作，同时上报当前的OS安装状态，当所有都做完之后，它就会重启系统，正式进入OS安装过程。</p>
+<p>这里它会重新去获取真正的OS镜像，这里的OS镜像是存放在http服务器上的，既可以是ironic内置的http服务器，也可以是用户自己搭建的服务，所以，实际上，在enroll和deploy之间，用户可以去为每一个node单独设置OS image的下载地址。</p>
+<p>以上就是ironic的基本运行原理。</p>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/NO1aUvIG6GOiwzPzusLVZA" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2023/02/06/理解linux内核1/">
+        ← prev <!--理解linux内核1-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2023/01/21/2023年春联/">
+        <!--2023年春联--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2023/02/12/理解linux内核2-内存管理/">
+        <title>理解linux内核2-内存管理 | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">February 12, 2023</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/linux/">linux</a><a href="/tags/kernel/">kernel</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">理解linux内核2-内存管理</h1>
+  <section class="post-content article-entry">
+    <p>ULK内存管理讲的是动态内存管理</p>
+<p><img src="/images/wechat/%E7%90%86%E8%A7%A3linux%E5%86%85%E6%A0%B82-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/img01.png" alt></p>
+<p>内存管理主要讲的就是如何使用这些内存，包括：</p>
+<ul>
+<li><p>内存页管理</p>
+</li>
+<li><p>连续内存分配</p>
+</li>
+<li><p>非连续内存分配</p>
+</li>
+</ul>
+<p>目前只看了内存页管理。</p>
+<p>首先，在linux设计里，无论底层的硬件是UMA还是NUMA，它都按照NUMA来设计，把整个物理内存分成多个node，每个node有node descriptor来表示，一个node内部又分成3个zone，分别是DMA、NORMAL和HIGHMEM，前两者比较常用，最后一个需要特殊处理，而每一个zone也都有zone descriptor来表示，在zone里面才是真正的内存页，内存页的大小为4K，内存页有page descriptor来表示，page descriptor里有2个字段比较重要，一个是count，作为引用计算，表示该内存页当前是否为free状态，另一个字段flag，它的低位bit用来表示该内存页的各种状态，高位bit则用来记录当前内存页是属于哪一个node和哪一个zone，注意所有内存的node和zone划分在内核初始化的时候就定下来了，有专门的table来记录。</p>
+<p>在内存分配的时候，如果内存足够，就可以立即分配成功，否则就需要进释放一部分内存才能继续进行分配，这会导致内存分配响应变慢，为了解决这个问题，尤其是当处理中断或者执行临界区代码时，内核准了了一些保留内存和原子操作，以便在需要的时候能立即成功分配内存。</p>
+<p>高地址内存页的分配</p>
+<p>对于32位系统，这是比较麻烦的一个内容，因为32位系统linux内核总共可用的内存空间只有1G，通常来说是直接map到了物理内存上，但如果物理内存大于4G，假如仍然是直接map的话，那内核能使用的内存最大只有1G，所以现在采取的办法是，这1G内存里只有前896M内存，也就是DMA和NORMAL内存是directly map，而剩下的128M内存它是用于HIGHMEM map，而对于物理内存大于4G的机器，要想使用多余的内存，就需要一种方法来合理地利用剩下的128G线性地址空间，让它可以尽可能多地访问映射（）到更多的物理内存。</p>
+<p><img src="/images/wechat/%E7%90%86%E8%A7%A3linux%E5%86%85%E6%A0%B82-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/img02.png" alt></p>
+<p>为了解决这个问题，linux kernel提供了3种机制，虽然都不可能同时寻址所有的物理内存，毕竟它只有128M，但提供了利用更多物理内存的机会。</p>
+<ul>
+<li><p>永久内核映射</p>
+</li>
+<li><p>临时内核映射</p>
+</li>
+<li><p>非连续内存分配</p>
+</li>
+</ul>
+<p>无论是永久内核映射还是临时内核映射，都会有一个特殊的page table来存储物理页的地址，其中的页面个数可能是512或1024，那么内核一次能访问到的内存大小也就是2M或4M。临时内核映射的一个区别就是，它在做映射的时候，在page table有一个特殊的值来做映射，这些特殊值的数量是有限的，这些特殊值是专为临时映射保留的，以便在进行内存分配的时候，无论是中断处理器还是延迟函数，它都不会阻塞。内核保证这些值（专门术语是windows）在任何时候都不会被两个内核控制路径（kernel control path）同时访问。</p>
+<p>Buddy System Algorithm</p>
+<p>这个因为以前就了解过，所以此处不再重复记录。</p>
+<p>关于zone allocator的内容，我目前也没读懂，等以后再记录。</p>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/KpQJpWFGTkWmUaP3azPX_Q" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2023/02/20/理解linux内核3-filesystem/">
+        ← prev <!--理解linux内核3-filesystem-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2023/02/10/BareMetal上的K8s-cluster-provision/">
+        <!--BareMetal上的K8s cluster provision--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

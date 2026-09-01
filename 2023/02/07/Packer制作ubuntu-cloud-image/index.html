@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2023/02/07/Packer制作ubuntu-cloud-image/">
+        <title>Packer制作ubuntu cloud image | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">February 7, 2023</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/kubernetes/">kubernetes</a><a href="/tags/packer/">packer</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">Packer制作ubuntu cloud image</h1>
+  <section class="post-content article-entry">
+    <p>Ubuntu官方提供3种镜像，desktop、server和cloud image，其中cloud image就是用于public cloud或者openstack上，便于自动化部署安装。</p>
+<p>有时候我们想在官方cloud image上做一些定制，产生一个新的image。</p>
+<p>首先假设我们已经下载了官方镜像：</p>
+<p>ubuntu-22.04-server-cloudimg-amd64.img</p>
+<p>其实，这里有很多种方法都可以对它进行定制，包括使用openstack的disk builder，很遗憾我没有把这个跑通，还可以使用libguestfs，libguestfs customize OS image非常简单，但制作的时候有两个问题，一是自带的官方的OS image disk size有限制，需要resize disk，二是用这个工具制作的镜像会非常大，具体原因我没有调查。</p>
+<p>最终，我选择了用packer进行制作，实际上，kubernetes的image builder也用了packer。</p>
+<p>使用packer制作镜像，最主要是编写一个template文件，如下：</p>
+<pre><code>$ cat template.json
+{
+  &quot;builders&quot;: [
+    {
+      &quot;type&quot;: &quot;qemu&quot;,
+      &quot;iso_url&quot;: &quot;ubuntu-22.04-server-cloudimg-amd64.img&quot;,
+      &quot;iso_checksum&quot;: &quot;md5:9688fc9011dcd4d960620d2ebb98a639&quot;,
+      &quot;ssh_username&quot;: &quot;ubuntu&quot;,
+      &quot;ssh_password&quot;: &quot;a&quot;,
+      &quot;ssh_timeout&quot;: &quot;1m&quot;,
+      &quot;ssh_port&quot;: 2222,
+      &quot;skip_nat_mapping&quot;: true,
+      &quot;disk_size&quot;: &quot;40G&quot;,
+      &quot;disk_image&quot;: true,
+      &quot;disk_compression&quot;: true,
+      &quot;format&quot;: &quot;qcow2&quot;,
+      &quot;headless&quot;: true,
+      &quot;accelerator&quot;: &quot;kvm&quot;,
+      &quot;output_directory&quot;: &quot;images&quot;,
+      &quot;qemuargs&quot;: [
+        [ &quot;-machine&quot;, &quot;accel=kvm,type=q35&quot; ],
+        [ &quot;-cpu&quot;, &quot;host&quot; ],
+        [ &quot;-m&quot;, &quot;2G&quot; ],
+        [ &quot;-smp&quot;, &quot;2&quot; ],
+        [ &quot;-nographic&quot; ],
+        [ &quot;-device&quot;, &quot;virtio-net-pci,netdev=net0&quot; ],
+        [ &quot;-netdev&quot;, &quot;user,id=net0,&quot;, &quot;hostfwd=tcp::2222-:22&quot; ],
+        [ &quot;-cdrom&quot;, &quot;seed.img&quot; ]
+      ],
+      &quot;shutdown_command&quot;: &quot;echo a |sudo -S shutdown -P now&quot;,
+      &quot;boot_command&quot;: [],
+      &quot;vm_name&quot;: &quot;jammy-k8s-containerd-1.6.15.qcow2&quot;
+    }
+  ],
+  &quot;provisioners&quot;: [
+    {
+      &quot;type&quot;: &quot;file&quot;,
+      &quot;source&quot;: &quot;files/crictl.yaml&quot;,
+      &quot;destination&quot;: &quot;/tmp/crictl.yaml&quot;
+    },
+    {
+      &quot;execute_command&quot;: &quot;echo a | {{.Vars}} sudo -E -S bash &#39;{{.Path}}&#39;&quot;,
+      &quot;scripts&quot;: [
+        &quot;prepare_k8s.sh&quot;
+      ],
+      &quot;type&quot;: &quot;shell&quot;
+    }
+  ]
+}</code></pre><p>以上的字段含义都可以在packer官方文档中找到解释，唯一需要注意的就是qemuargs 和ssh_port 字段是有关联的，如果qemuargs设置的不对，build image一定会失败，这里</p>
+<p>-machine 表示使用kvm方式启动qemu</p>
+<p>-device表示给这个qemu启动的vm配置一块叫net0的网络设备</p>
+<p>-netdev和-device对应，它会使用net0设备，并且把host机器的2222端口和qemu启动的vm内的22端口做了映射，所以如果想要ssh访问qemu启动的vm，从host上就应该使用2222端口</p>
+<p>-cdrom表示把cloud-init需要用的文件通过cdrom image的方式挂载到vm内，这样当vm启动的时候，就会使用seed.img中的文件，从而可以给这个vm添加一些简单的cloud-init user-data，此处seed.img如何制作呢？最简单的使用cloud-localds工具</p>
+<pre class="line-numbers language-ruby"><code class="language-ruby">$ cat user<span class="token operator">-</span>data<span class="token punctuation">.</span>yaml
+<span class="token comment" spellcheck="true">#cloud-config</span>
+
+ssh_pwauth<span class="token punctuation">:</span> <span class="token keyword">true</span>
+user<span class="token punctuation">:</span>
+  lock_passwd<span class="token punctuation">:</span> <span class="token keyword">false</span>
+  hashed_passwd<span class="token punctuation">:</span> $<span class="token number">6</span><span class="token variable">$rounds</span><span class="token operator">=</span><span class="token number">4096</span><span class="token variable">$D8xCAW1zbWkn6LDM</span>$<span class="token operator">/</span><span class="token constant">UG31JlD7CZJiaGRZpwwdDWQqLe7tFpt4yxQPATf3x5M9qYx4o</span><span class="token regex">/EsB82pueNXMPTKk3slyMGvg3cSxxrNt054/</span>
+<span class="token comment" spellcheck="true">### make hashed_passwd: mkpasswd --method=SHA-512 --rounds=4096</span>
+$ cloud<span class="token operator">-</span>localds seed<span class="token punctuation">.</span>img user<span class="token operator">-</span>data<span class="token punctuation">.</span>yaml<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>user-data.yaml从cloud-init官方网站可以找到很多示例代码，而cloud-localds命令也非常简单，它也可以接收meta-data.yaml作为输入.</p>
+<p>最后，provisioners里的prepare_k8s.sh脚本内可以是任何内容，比如：</p>
+<pre class="line-numbers language-bash"><code class="language-bash">$ <span class="token function">cat</span> prepare_k8s.sh
+<span class="token comment" spellcheck="true">#!/bin/bash</span>
+<span class="token comment" spellcheck="true"># Install crictl</span>
+<span class="token function">wget</span> -q -c https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.26.0/crictl-v1.26.0-linux-amd64.tar.gz -O - <span class="token operator">|</span> <span class="token function">tar</span> -xz -C /usr/bin<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这样，我们就给这个image里安装了crictl工具，并且配置了默认的runtime是containerd。</p>
+<p>最终我们使用如下命令</p>
+<pre class="line-numbers language-cpp"><code class="language-cpp"><span class="token keyword">export</span> PACKER_LOG<span class="token operator">=</span><span class="token number">1</span>
+packer build <span class="token keyword">template</span><span class="token punctuation">.</span>json<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>它就会output_directory目录下生成一个名字为vm_name的文件。我们这里就是</p>
+<pre><code>images/jammy-k8s-containerd-1.6.15.qcow2</code></pre><p>对于生成的文件，可以使用qemu进行测试运行：</p>
+<pre class="line-numbers language-properties"><code class="language-properties"><span class="token attr-name">qemu-system-x86_64</span> <span class="token attr-value"> \
+  -machine accel=kvm,type=q35 \
+  -cpu host \
+  -m 2G \
+  -nographic \
+  -device virtio-net-pci,netdev=net0 \
+  -netdev user,id=net0,hostfwd=tcp::2222-:22 \
+  -drive if=virtio,format=qcow2,index=0,file=images/jammy-k8s-containerd-1.6.15.qcow2</span>
+<span class="token comment" spellcheck="true">   #-drive if=virtio,format=raw,index=1,file=seed.img</span>
+<span class="token comment" spellcheck="true">   #-fda seed.img</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>此处比较有意思的是，如果我想测试seed.img，既可以使用-drive参数，也可以使用-fda参数，但它们在packer里都不能用，却只能使用-cdrom。</p>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/0DJ-0SJ_fYPeD3fxsnrdDA" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2023/02/10/BareMetal上的K8s-cluster-provision/">
+        ← prev <!--BareMetal上的K8s cluster provision-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2023/02/06/理解linux内核1/">
+        <!--理解linux内核1--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

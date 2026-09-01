@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2022/11/03/How-to-use-tcpdump-on-windows/">
+        <title>How to use tcpdump on windows | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">November 3, 2022</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/network/">network</a><a href="/tags/tcpdump/">tcpdump</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">How to use tcpdump on windows</h1>
+  <section class="post-content article-entry">
+    <pre class="line-numbers language-powershell"><code class="language-powershell"><span class="token comment" spellcheck="true"># Enable ICMP</span>
+<span class="token function">Import-Module</span> NetSecurity
+<span class="token function">Set</span><span class="token operator">-</span>NetFirewallRule <span class="token operator">-</span>DisplayName <span class="token string">"File and Printer Sharing (Echo Request - ICMPv4-In)"</span> <span class="token operator">-</span>enabled True
+
+
+<span class="token comment" spellcheck="true"># install tcpdump</span>
+<span class="token namespace">[Net.ServicePointManager]</span>::SecurityProtocol = <span class="token string">"tls12, tls11, tls"</span>
+wget https:<span class="token operator">/</span><span class="token operator">/</span>www<span class="token punctuation">.</span>microolap<span class="token punctuation">.</span>com<span class="token operator">/</span>downloads<span class="token operator">/</span>tcpdump<span class="token operator">/</span>tcpdump_trial_license<span class="token punctuation">.</span>zip <span class="token operator">-</span>O tcpdump<span class="token punctuation">.</span>zip
+Expand<span class="token operator">-</span>Archive <span class="token punctuation">.</span>\tcpdump<span class="token punctuation">.</span>zip <span class="token operator">-</span>DestinationPath tcpdump
+
+
+<span class="token comment" spellcheck="true"># Get agent0 device ID</span>
+<span class="token function">Get-ChildItem</span> HKLM:\SYSTEM\CurrentControlSet\Services\vmsmp\parameters\NicList\
+
+
+<span class="token comment" spellcheck="true"># tcpdump get device interface ID</span>
+<span class="token punctuation">.</span>\tcpdump<span class="token punctuation">.</span>exe <span class="token operator">-</span>D
+<span class="token punctuation">.</span>\tcpdump<span class="token punctuation">.</span>exe <span class="token operator">-</span>i 1
+wget <span class="token operator">-</span>O wireshark<span class="token punctuation">.</span>exe https:<span class="token operator">/</span><span class="token operator">/</span>1<span class="token punctuation">.</span>na<span class="token punctuation">.</span>dl<span class="token punctuation">.</span>wireshark<span class="token punctuation">.</span>org<span class="token operator">/</span>win64<span class="token operator">/</span>Wireshark<span class="token operator">-</span>win64<span class="token operator">-</span>2<span class="token punctuation">.</span>6<span class="token punctuation">.</span>6<span class="token punctuation">.</span>exe<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2022/11/03/How-to-debug-kubelet/">
+        ← prev <!--How to debug kubelet-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2022/04/23/2022年春联/">
+        <!--2022年春联--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

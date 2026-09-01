@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2020/12/31/C++从2006到2020-4.1-C++11-并发/">
+        <title>C++从2006到2020 - 4.1 C++11: 并发 | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">December 31, 2020</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/cpp/">cpp</a><a href="/tags/concurrency/">concurrency</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">C++从2006到2020 - 4.1 C++11: 并发</h1>
+  <section class="post-content article-entry">
+    <p>C++11必须支持并发，不是说C++以前不支持并发，而是没有标准化。以前的支持方式都是非常low level的，跟具体硬件和操作系统相关。这样会导致代码的可读性和可移植性都非常差。</p>
+<p>C++11对于并发的支持是由concurrency group的专家组完成，负责人是Hans-J Boehm（现在Google）。它分为3个主题：</p>
+<ul>
+<li><p>4.1.1 内存模型</p>
+</li>
+<li><p>4.1.2 线程和锁</p>
+</li>
+<li><p>4.1.3 Futures</p>
+</li>
+</ul>
+<p>值得一提的是，并行算法、网络、协程（coroutines）是由其他组来完成的，而且没有打算进入C++11。</p>
+<p><strong>4.1.1 内存模型（Memory Model）</strong></p>
+<p>当计算机硬件已经支持多核、多级缓存、乱序执行、指令重组等功能的时候，我们必须精确定义内存访问的规则。IBM的Paul Mckenney对这个主题非常积极，剑桥大学的Mark Batty把Paul等人的提案进行了形式化描述。内存模型是C++11非常关键的一部分。</p>
+<p>本来C11也会使用C++11的内存模型，但C标准委员会在最后引入了一些不兼容的语法，这对C和C++的用户以及编译器实现者来说都非常痛苦。</p>
+<p>提出内存模型的主要动机来自于Linux和Windows内核。现在它们已经用上了C++11的内存模型了。因为内存模型对大多数程序员来说其实并不可见，所以相关的文章也比较少。如果用一句话总结，那就是，有了内存模型，代码的运行才是可预期的。</p>
+<p>一开始，大多数委员会成员都低估了这个问题。我们知道Java有一个很好的内存模型，希望能直接采用这个模型，但Intel和IBM的代表对此投了反对票，因为他们指出如果C++采用和Java一样的内存模型会拖慢Java虚拟机的运行速度（至少2倍）。最终，为了保持Java的性能，C++采用了一个非常复杂的内存模型，很讽刺的是，后来人们指责C++的时候，其中一条就包括内存模型比Java复杂。</p>
+<p>基本上，C++11内存模型是基于先发（happens-before）关系，并且同时支持序列一致性（sequential consistent）和宽松（relaxed）内存模型。在此之上（这句非常关键），C++11提供了原子类型（atomic types）和无锁（lock-free）编程。具体细节可以参加C++ concurrency in action这本书。</p>
+<p>毫无疑问，内存模型的讨论非常激烈，因为它的终稿对硬件厂商和编译器实现者非常关键。其中最艰难的一个决定是同时接受Intel的x86原语（原子类型操作）和IBM的PowerPC原语（fences、内存屏障）。按常理，只需要支持一种。但最终Paul劝服了我，因为IBM的复杂算法里有相当多的code使用fences去适配Intel的指令模型。最终，我们决定两者都支持，也就是现在C++11所采用的内存模型。后来，我和委员会其他成员都对这个决定非常满意， 因为当我们把内存屏障和原子操作结合使用的时候，可以实现出比只用其中之一更优的问题解决方案。</p>
+<p>再之后，我们又支持了基于数据依赖的一致性（carries_dependency）。</p>
+<p>C++11引入原子类型（atomic types），如下所示，简单的操作可以是原子的：</p>
+<pre><code>atomic&lt;int&gt; x;
+void increment()
+{
+  x++;  // not x = x + 1
+}</code></pre><p>很显然，原子类型在很多地方都非常有用。又比如，原子类型可以使双重检查锁优化（double-checked locking optimizatio）更简单。</p>
+<pre class="line-numbers language-nginx"><code class="language-nginx">mutex mutex_x<span class="token punctuation">;</span>
+atomic<span class="token operator">&lt;</span>bool<span class="token operator">></span> init_x<span class="token punctuation">;</span>  <span class="token operator">/</span><span class="token operator">/</span> initially <span class="token boolean">false</span>
+int x<span class="token punctuation">;</span>
+
+<span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>init_x<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  lock_guard<span class="token operator">&lt;</span>mutex<span class="token operator">></span> <span class="token function">lck</span><span class="token punctuation">(</span>mutex_x<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>init_x<span class="token punctuation">)</span> x <span class="token operator">=</span> <span class="token number">42</span><span class="token punctuation">;</span>
+  init_x <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>  <span class="token operator">/</span><span class="token operator">/</span> implicitly release mutex_x <span class="token function">here</span> <span class="token punctuation">(</span>RAII<span class="token punctuation">)</span>
+
+<span class="token operator">/</span><span class="token operator">/</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token keyword">use</span> x <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>双重检查锁的关键是使用相对轻量的atomic来保护代价更高的互斥锁。</p>
+<p>这里的lock_guard是一个RAII类型数据，目的可以确保它管控的互斥锁能及时释放。</p>
+<p>Hans-J Boehm对原子类型的评价是“令人惊讶的流行”，但我其实一点都不惊讶。虽然在并发领域不如Hans专业，我更多的是欣赏其简洁性。C++11也引入了无锁编程，比如compare and swap的实现：</p>
+<pre class="line-numbers language-cpp"><code class="language-cpp"><span class="token keyword">template</span><span class="token operator">&lt;</span><span class="token keyword">typename</span> T<span class="token operator">></span>
+<span class="token keyword">class</span> <span class="token class-name">stack</span> <span class="token punctuation">{</span>
+  std<span class="token operator">::</span>atomic<span class="token operator">&lt;</span>node<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token operator">*</span><span class="token operator">></span> head<span class="token punctuation">;</span>
+<span class="token keyword">public</span><span class="token operator">:</span>
+  <span class="token keyword">void</span> <span class="token function">push</span><span class="token punctuation">(</span><span class="token keyword">const</span> T<span class="token operator">&amp;</span> data<span class="token punctuation">)</span>
+  <span class="token punctuation">{</span>
+     node<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token operator">*</span> new_node <span class="token operator">=</span> <span class="token keyword">new</span> node<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+     new_node<span class="token operator">-</span><span class="token operator">></span>next <span class="token operator">=</span> head<span class="token punctuation">.</span><span class="token function">load</span><span class="token punctuation">(</span>std<span class="token operator">::</span>memory_order_relaxed<span class="token punctuation">)</span><span class="token punctuation">;</span>
+     <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token operator">!</span>head<span class="token punctuation">.</span><span class="token function">compare_exchange_weak</span><span class="token punctuation">(</span>new_node<span class="token operator">-</span><span class="token operator">></span>next<span class="token punctuation">,</span> new_node<span class="token punctuation">,</span>
+            std<span class="token operator">::</span>memory_order_release<span class="token punctuation">,</span> std<span class="token operator">::</span>memory_order_relaxed<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment" spellcheck="true">// ...</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>即使用C++11，我依然觉得无锁编程只有专家级别的程序员才能掌握。</p>
+<p>4.1.2 线程和锁</p>
+<p>在内存模型之上，C++11提供了基于线程和锁的并发模型。我觉得线程和锁级别的并发模型对普通应用程序来说是最差的并发模型，但对于C++这样的语言来说却是必不可少的。不论C++支持多少其他特性，它始终是一门系统编程语言，有能力直接跟操作系统进行交互，会被系统内核和设备驱动程序使用。因此，它必须提供系统能支持的最低级别的并发模型。在此之上，我们才能构建一些更适合普通应用程序的并发模型。就个人喜好而言，我更喜欢基于消息传递（message-based）的系统，因为它能完全消除数据争用（data race），而数据争用是最易引发并发bug的根源。</p>
+<p>C++支持的线程和锁级别的编程实际上是POSIX和Windows系统提供的并发模型的变体，不过多了一个类型安全。这在《C++编程语言》和《C++ concurrency in action》里有讲。</p>
+<ul>
+<li><p>线程 - 系统线程的执行，支持join() 和 detach()方法</p>
+</li>
+<li><p>互斥锁 - 系统互斥锁，提供lock()和unlock()方法，以及RAII方式的锁释放</p>
+</li>
+<li><p>条件变量 - 系统条件变量，可在不同线程之间交流事件</p>
+</li>
+<li><p>thread_local - thread-local 存储</p>
+</li>
+</ul>
+<p>与C语言的并发模型相比，类型安全使代码更简单更简洁。比如，再也没有void**和宏。看下面的例子，在别的线程里执行一个函数并返回结果：</p>
+<pre class="line-numbers language-ruby"><code class="language-ruby"><span class="token keyword">class</span> <span class="token class-name">F</span> <span class="token punctuation">{</span>    <span class="token operator">/</span><span class="token operator">/</span> traditional function objects
+public<span class="token punctuation">:</span>
+  <span class="token function">F</span><span class="token punctuation">(</span>const vector<span class="token operator">&lt;</span>double<span class="token operator">></span><span class="token operator">&amp;</span> vv<span class="token punctuation">,</span> double<span class="token operator">*</span> p<span class="token punctuation">)</span> <span class="token punctuation">:</span> v<span class="token punctuation">{</span>vv<span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token function">res</span><span class="token punctuation">(</span>p<span class="token punctuation">)</span> <span class="token punctuation">{</span><span class="token punctuation">}</span>
+  void <span class="token function">operator</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>       <span class="token operator">/</span><span class="token operator">/</span> place result <span class="token keyword">in</span> <span class="token operator">*</span>res
+
+private<span class="token punctuation">:</span>
+  const vector<span class="token operator">&lt;</span>double<span class="token operator">></span><span class="token operator">&amp;</span> v<span class="token punctuation">;</span>  <span class="token operator">/</span><span class="token operator">/</span> source of input
+  double <span class="token operator">*</span>res<span class="token punctuation">;</span>              <span class="token operator">/</span><span class="token operator">/</span> target of output
+
+double <span class="token function">f</span><span class="token punctuation">(</span>const vector<span class="token operator">&lt;</span>double<span class="token operator">></span><span class="token operator">&amp;</span> v<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token operator">/</span><span class="token operator">/</span> traditional function
+void <span class="token function">g</span><span class="token punctuation">(</span>const vector<span class="token operator">&lt;</span>double<span class="token operator">></span><span class="token operator">&amp;</span> v<span class="token punctuation">,</span> double<span class="token operator">*</span> res<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token operator">/</span><span class="token operator">/</span> put result into <span class="token operator">*</span>res
+
+int <span class="token function">cmp</span><span class="token punctuation">(</span>vector<span class="token operator">&lt;</span>double<span class="token operator">></span><span class="token operator">&amp;</span> vec1<span class="token punctuation">,</span> vector<span class="token operator">&lt;</span>double<span class="token operator">></span><span class="token operator">&amp;</span> vec2<span class="token punctuation">,</span> vector<span class="token operator">&lt;</span>double<span class="token operator">></span><span class="token operator">&amp;</span> vec3<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+  double res1<span class="token punctuation">;</span>
+  double res2<span class="token punctuation">;</span>
+  double res3<span class="token punctuation">;</span>
+  <span class="token operator">/</span><span class="token operator">/</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+  thread t1 <span class="token punctuation">{</span><span class="token constant">F</span><span class="token punctuation">{</span>vec1<span class="token punctuation">,</span> res1<span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">;</span>     <span class="token operator">/</span><span class="token operator">/</span> function object
+  thread t2 <span class="token punctuation">{</span><span class="token punctuation">[</span><span class="token operator">&amp;</span><span class="token punctuation">]</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{</span> res2 <span class="token operator">=</span> <span class="token function">f</span><span class="token punctuation">(</span>vec2<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">;</span>    <span class="token operator">/</span><span class="token operator">/</span> lambda
+  thread t3 <span class="token punctuation">{</span>g<span class="token punctuation">,</span> vec3<span class="token punctuation">,</span> <span class="token operator">&amp;</span>res3<span class="token punctuation">}</span><span class="token punctuation">;</span>       <span class="token operator">/</span><span class="token operator">/</span> ordinary function
+
+  t1<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  t2<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  t3<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  cout <span class="token operator">&lt;</span><span class="token operator">&lt;</span> res1 <span class="token operator">&lt;</span><span class="token operator">&lt;</span> <span class="token string">' '</span> <span class="token operator">&lt;</span><span class="token operator">&lt;</span> res2 <span class="token operator">&lt;</span><span class="token operator">&lt;</span> <span class="token string">' '</span> <span class="token operator">&lt;</span><span class="token operator">&lt;</span> res3 <span class="token operator">&lt;</span><span class="token operator">&lt;</span> endl<span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>设计一个类型安全库依赖于可变参数模板（variadic template）。比如，std::thread的构造函数就是一个可变参数模板，它可以根据第一个参数来区分和检查后续参数类型和个数的正确性。</p>
+<p>lambda也是<thread>库的使用更简单。比如上面的例子，t2的参数是一段代码（lambda表达式），可以访问局部（local scope）变量。</thread></p>
+<p>在引入新的语言特性的同时，让标准库的实现也使用这些特性很难。这无疑带来很多风险，但它也有很多好处：</p>
+<ul>
+<li><p>给用户一个更好的标准库</p>
+</li>
+<li><p>给用户展示新特性的示例代码</p>
+</li>
+<li><p>用户不必自己实现低级别的基础设施</p>
+</li>
+<li><p>强迫语言特性设计者们去处理真实问题</p>
+</li>
+</ul>
+<p>线程和锁模型的使用需要同步机制来避免race condition。C++11提供标准的互斥锁（mutex）来完成这个目的。</p>
+<pre class="line-numbers language-nginx"><code class="language-nginx">mutex m<span class="token punctuation">;</span>    <span class="token operator">/</span><span class="token operator">/</span> controlling mutex
+int sh<span class="token punctuation">;</span>     <span class="token operator">/</span><span class="token operator">/</span> shared data
+
+void <span class="token function">access</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+  unique_lock<span class="token operator">&lt;</span>mutex<span class="token operator">></span> <span class="token function">lck</span><span class="token punctuation">(</span>m<span class="token punctuation">)</span><span class="token punctuation">;</span>     <span class="token operator">/</span><span class="token operator">/</span> acquire mutex
+  sh <span class="token operator">+</span><span class="token operator">=</span> <span class="token number">7</span><span class="token punctuation">;</span>                       <span class="token operator">/</span><span class="token operator">/</span> manipulate shared data
+<span class="token punctuation">}</span>  <span class="token operator">/</span><span class="token operator">/</span> release lock implicitly<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>unique_lock是一个RAII对象，确保用户不会忘记释放（unlock）锁（mutex）。这种锁也可以防止用户写出我们最常见到的一种死锁（deadlock）代码：</p>
+<pre class="line-numbers language-javascript"><code class="language-javascript"><span class="token keyword">void</span> <span class="token function">f</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+  <span class="token comment" spellcheck="true">// ...</span>
+  unique_lock<span class="token operator">&lt;</span>mutex<span class="token operator">></span> lck1 <span class="token punctuation">{</span>m1<span class="token punctuation">,</span> defer_lock<span class="token punctuation">}</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// don't yet acquire m1</span>
+  unique_lock<span class="token operator">&lt;</span>mutex<span class="token operator">></span> lck2 <span class="token punctuation">{</span>m2<span class="token punctuation">,</span> defer_lock<span class="token punctuation">}</span><span class="token punctuation">;</span>
+  unique_lock<span class="token operator">&lt;</span>mutex<span class="token operator">></span> lck3 <span class="token punctuation">{</span>m3<span class="token punctuation">,</span> defer_lock<span class="token punctuation">}</span><span class="token punctuation">;</span>
+  <span class="token comment" spellcheck="true">// ...</span>
+  <span class="token function">lock</span><span class="token punctuation">(</span>lck1<span class="token punctuation">,</span> lck2<span class="token punctuation">,</span> lck3<span class="token punctuation">)</span><span class="token punctuation">;</span>      <span class="token comment" spellcheck="true">// acquire all three locks</span>
+  <span class="token comment" spellcheck="true">// ... manipulate shared data ...</span>
+<span class="token punctuation">}</span>  <span class="token comment" spellcheck="true">// implicitly release all mutexex</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这个例子里，lock()函数同时获取3个锁，并且同时释放（RAII）。当然C++17对此还有更优雅的实现。</p>
+<p>线程库最早是由Peter Becker在C++0x中提出的，基于boost::thread提供的接口，在提出该提案的同一次会议（2004年）上，内存模型的第一个提案也出现了，也许这并非巧合。</p>
+<p>最大的争论是线程撤销（cancellation），就是让线程从正在运行的状态直接停止执行。C++委员会的每个程序员都希望拥有这个特性，但C委员会在一次正式投票里投了反对票，而且是唯一一次来自C委员会对C++的投票。我记得，“C语言没有析构函数，无法使用RAII释放资源”，负责POSIX的Austin Group派代表表示，他们坚决反对任何与线程撤销有关的提案，坚称线程撤销既无必要，也无法安全地实现。考虑到Windows和其他操作系统提供了很多类似的实现，并且C++不是C，对于使用POSIX的人来说并无影响，我担心他们只是在保护C语言，而不是想让C++变得更好。C++标准缺少线程撤销一直都是一个问题。比如，在执行并行搜索的时候，第一个找到答案的线程需要停止搜索，撤销其他线程的执行。C++20提供了一个停止令牌（stop-token）的机制来支持这类用例（use case）。</p>
+<p><strong>4.1.3 futures</strong></p>
+<p>一个类型安全的类POSIX/WINDOWS线程库是一个极大的提升，但这仍然属于1980年代的低级编程。一些委员会成员，比如我，表明C++亟需更现代和更高级的（并发）编程方式。比如，Matt Austern（来自Google）和我在是否使用消息队列（channel）和线程池上有分歧。主要的争论点是时间太少来不及实现这样一个库。我表示，如果委员会的专家不提供这个库，那很多程序员只能使用我的学生实现出来的库。委员会本应做的更好，“你即使不提供一个完整的库，那至少提供一种方式，可以让程序员在不同的线程之间传递信息，而无需同步”。</p>
+<p>委员会分成了两派，一方认为只需要一个改善后的类型安全的POSIX库，另一方认为POSIX是1970年代的设计，所有人都应使用更高级的基础库。在07年的科纳会议室，我们达成妥协。C++0x（当时预期是C++09）会提供promises和futures，以及一个异步任务的发射器（launcher），async()方法，允许提供线程池，但不要钱。像大多数妥协一样，科纳妥协没有让任何人满意，而且存在一些技术性问题。不过，很多人都把这看做是一次进步，多少年了，终于发生改变了（但很多人其实不知道这是一次妥协的结果）。</p>
+<p>最终，C++11提供了：</p>
+<ul>
+<li><p>future - a handle from which you can get() a value from a shared one-object buffer, possibly after a wait for the value to be put there by a promise</p>
+</li>
+<li><p>promise - a handle through which you can put() a value to a shared one-object buffer, possibly waking up a thread waiting on a future</p>
+</li>
+<li><p>packaged_task - a class that makes it easy to set up a function to be executed asynchronously on a thread with a future for its result and a promise to return the result</p>
+</li>
+<li><p>async() - a function that can launch a task to be executed on another thread</p>
+</li>
+</ul>
+<p>最简单的用法是使用async()。给定一个函数作为参数，async()运行在一个新起的线程上，并且隐藏了所有线程启动和线程通信的细节。</p>
+<pre><code>double comp4(vector&lt;double&gt;&amp; v) // spawn many tasks if v is large enough
+{
+  if (v.size() &lt; 10000)  // is it worth using concurrency?
+    return accum(v.begin(), v.end(), 0.0);
+  auto v0 = &amp;v[0];
+  auto sz = v.size();
+
+  auto f0 = async(accum, v0, v0+sz/4, 0.0);  // first quarter
+  auto f1 = async(accum, v0+sz/4, v0+sz/2, 0.0); // second quarter
+  auto f2 = async(accum, v0+sz/2, v0+sz*3/4, 0.0); // third quarter
+  auto f3 = async(accum, v0+sz*3/4, v0+sz, 0.0); // fourth quarter
+
+  return f0.get() + f1.get() + f2.get() + f3.get(); // collect the results
+}</code></pre><p>async把代码封装到一个packaged_task中，定义future，并把结果通过promise返回。</p>
+<p>future/promise既可以传递普通的值（value），也可以传递异常。</p>
+<pre class="line-numbers language-nginx"><code class="language-nginx">X <span class="token function">f</span><span class="token punctuation">(</span>Y<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token operator">/</span><span class="token operator">/</span> ordinary function
+
+void <span class="token function">ff</span><span class="token punctuation">(</span>Y y<span class="token punctuation">,</span> promise<span class="token operator">&lt;</span>X<span class="token operator">></span><span class="token operator">&amp;</span> p<span class="token punctuation">)</span> <span class="token operator">/</span><span class="token operator">/</span> to execute <span class="token function">f</span><span class="token punctuation">(</span>y<span class="token punctuation">)</span> asynchronously
+<span class="token punctuation">{</span>
+  try <span class="token punctuation">{</span>
+    X res <span class="token operator">=</span> <span class="token function">f</span><span class="token punctuation">(</span>y<span class="token punctuation">)</span><span class="token punctuation">;</span>    <span class="token operator">/</span><span class="token operator">/</span> compute a value for res
+    p<span class="token punctuation">.</span><span class="token function">set_value</span><span class="token punctuation">(</span>res<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token function">catch</span> <span class="token punctuation">(</span><span class="token class-name"><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span></span><span class="token punctuation">)</span> <span class="token punctuation">{</span>  <span class="token operator">/</span><span class="token operator">/</span> oops<span class="token punctuation">:</span> couldn't compute res
+    p<span class="token punctuation">.</span><span class="token function">set_exception</span><span class="token punctuation">(</span><span class="token function">current_exception</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>便于理解，我这里的参数没有使用perfect forwarding。</p>
+<p>这里对future的get()要么是一个值（value），要么是一个异常。和同步调用f()完全等价。</p>
+<pre class="line-numbers language-javascript"><code class="language-javascript"><span class="token keyword">void</span> <span class="token function">user</span><span class="token punctuation">(</span>Y arg<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+  auto pro <span class="token operator">=</span> promise<span class="token operator">&lt;</span>X<span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  auto fut <span class="token operator">=</span> pro<span class="token punctuation">.</span><span class="token function">get_future</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  thread t <span class="token punctuation">{</span>ff<span class="token punctuation">,</span> arg<span class="token punctuation">,</span> pro<span class="token punctuation">}</span><span class="token punctuation">;</span>   <span class="token comment" spellcheck="true">// run ff on a different thread</span>
+  <span class="token comment" spellcheck="true">// ... do something else for a while ...</span>
+  X x <span class="token operator">=</span> fut<span class="token punctuation">.</span><span class="token keyword">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token comment" spellcheck="true">// ...</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>标准库packaged_task实现了把普通函数封装成一个函数对象，并且处理promise/future细节的功能。</p>
+<p>我本希望这会成为实现支持work-stealing线程池的基础，但结果令我失望，参考8.4小节。</p>
+<p>Refer:</p>
+<p><a href="https://www.stroustrup.com/hopl20main-p5-p-bfc9cd4--final.pdf" target="_blank" rel="noopener">https://www.stroustrup.com/hopl20main-p5-p-bfc9cd4--final.pdf</a></p>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/9QdYnnftSdiZugg6kRU2LQ" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2021/01/09/自己动手打造路由器/">
+        ← prev <!--自己动手打造路由器-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2020/12/30/X509中的Basic-Constraints-extension/">
+        <!--X509中的Basic Constraints extension--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

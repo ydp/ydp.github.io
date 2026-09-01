@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2020/12/30/X509中的Basic-Constraints-extension/">
+        <title>X509中的Basic Constraints extension | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">December 30, 2020</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/network/">network</a><a href="/tags/tls/">tls</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">X509中的Basic Constraints extension</h1>
+  <section class="post-content article-entry">
+    <p>企业级应用里经常需要自己生成证书，但这些证书（无论是self-signed还是由私有CA（Certificate Authority）所签）一般不会被浏览器所信任。只有浏览器里的默认CA所签出来的证书（cert）才会被浏览器直接信任。</p>
+<p><strong>证书链(certificate chains)</strong></p>
+<p>每个证书链的顶部是root CA，root CA的证书是self-signed的。这种证书形象的说法是“上帝证书”，因为它的基本上就等于说，“Trust me, because I say so”。这就是前面提到的浏览器里的默认CA。</p>
+<p><img src="/images/wechat/X509%E4%B8%AD%E7%9A%84Basic-Constraints-extension/img01.jpg" alt></p>
+<p>这些root CA是由一些商业公司所控制，专门给其他公司签发证书用的，它们被浏览器默认信任，这样可以减少用户自己添加CA的麻烦。这些CA的作用就是信任锚点（trust anchor point），就是说不仅这些CA会被浏览器直接信任，由这些CA签出来的证书（没错，证书还可以签证书，形成证书链）也会被浏览器信任。当然，服务器端不会直接使用root CA，它们需要被保护起来，然后由root CA签出其他的CA，这些所谓的end entity certificate才是web服务器真正需要的。</p>
+<p>这里有几个概念澄清一下：</p>
+<ul>
+<li><p>CA: 颁发证书的机构</p>
+</li>
+<li><p>root CA：指证书链最顶端的证书</p>
+</li>
+<li><p>CA certificate: 用来签发证书的证书，不被web服务器直接使用，包括root CA和Intermediate CA</p>
+</li>
+<li><p>End Entity certificate: 有时简称 Entity cert或 EE cert，有时也叫client certificate</p>
+</li>
+</ul>
+<p><strong>签发证书</strong></p>
+<p>这里就不介绍签发证书所涉及的公钥私钥原理，只看证书的使用方法。首先，每个证书里都会包含一些Identity信息：谁签的证书，证书签给谁的。</p>
+<p>由于证书本身可以再签证书，所以前面提到位于root CA cert和EE cert之间的都是Intermidiate CA cert，这种cert虽然不是self-signed，但依然有能力去签出其他证书来。比如，我们来看一下访问gmail时，浏览器收到的证书链。</p>
+<p><img src="/images/wechat/X509%E4%B8%AD%E7%9A%84Basic-Constraints-extension/img02.jpg" alt></p>
+<p>从上图可以看到，证书链的最顶端是Verisign Class 3 Public Primary Certification Authority，也就是Verisign公司所拥有的root CA cert，注意看图片下半部分的信息，它是一个X509 v1版本的证书，也就是说它不包含certificate extensions字段（终于点题了）。</p>
+<p>再看它的下一级CA：</p>
+<p><img src="/images/wechat/X509%E4%B8%AD%E7%9A%84Basic-Constraints-extension/img03.jpg" alt></p>
+<p>是由Thawte公司签的证书，这个公司的创始人就是南非创立ubuntu开源版本的哥们儿。它是一个X509 v3版本的证书，可以看到它有Certificate Basic Constraints字段，可以看一下它包含的信息：</p>
+<p><img src="/images/wechat/X509%E4%B8%AD%E7%9A%84Basic-Constraints-extension/img04.jpg" alt></p>
+<p>可以看到它是一个CA（而不是一个end entity cert ）， 同时，它支持的最大intermidiate CA个数是0，也就是说它签出来的证书不能再用来签出其他证书，只能作为web server的end entity CA使用。最后看一下client certificate，也就是end entity certificate。</p>
+<p><strong>Client Certificate</strong></p>
+<p><img src="/images/wechat/X509%E4%B8%AD%E7%9A%84Basic-Constraints-extension/img05.jpg" alt></p>
+<p>最后一级证书就是client certificate，也就是在google的gmail服务器上直接使用的证书，可以看到这里的字段表明它不是一个CA，而是一个EE cert。</p>
+<p><strong>Basic Contraints</strong></p>
+<p>为什么需要这个扩展字段？从上面的介绍可以看到：</p>
+<p>它可以用来区分CA cert和ee cert，也就是说这个证书到底能不能再签出其他证书</p>
+<p>这样就能保证那些商业公司签出来的证书不会被滥用，保证信任关系，从安全和商业上都能得到更多的保障。但这里有一点需要注意，root CA一般都不需要Basic Contraints，所以当用root CA去签intermidiate CA的时候，也容易不加这个字段，但对于现在的浏览器来说，intermidate CA又必须要添加这个字段。</p>
+<p>总结（takeaway）：签证书的时候最好带上Basic Contraints extension字段（写了一大段，就这一句）。</p>
+<p>Refer: <a href="https://unitstep.net/blog/2009/03/16/using-the-basic-constraints-extension-in-x509-v3-certificates-for-intermediate-cas/" target="_blank" rel="noopener">https://unitstep.net/blog/2009/03/16/using-the-basic-constraints-extension-in-x509-v3-certificates-for-intermediate-cas/</a></p>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/GTNfkr3UGtGKw_lHuBFEDw" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2020/12/31/C++从2006到2020-4.1-C++11-并发/">
+        ← prev <!--C++从2006到2020 - 4.1 C++11: 并发-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2020/12/13/C++从2006到2020-摘要/">
+        <!--C++从2006到2020 - 摘要--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

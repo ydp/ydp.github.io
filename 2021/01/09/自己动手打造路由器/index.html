@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2021/01/09/自己动手打造路由器/">
+        <title>自己动手打造路由器 | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">January 9, 2021</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/network/">network</a><a href="/tags/router/">router</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">自己动手打造路由器</h1>
+  <section class="post-content article-entry">
+    <p>在网上看到一篇文章</p>
+<h1 id="The-Ars-guide-to-building-a-Linux-router-from-scratch"><a href="#The-Ars-guide-to-building-a-Linux-router-from-scratch" class="headerlink" title="The Ars guide to building a Linux router from scratch"></a>The Ars guide to building a Linux router from scratch</h1><p>很有意思，不仅过程很有趣，还能学到不少东西（文章封面就是作者的路由器照片）。这里简单总结记录一下。</p>
+<p>打造路由器整个过程，分硬件和软件两部分。</p>
+<p>硬件就是买一台mini PC，然后作者还加了个SSD硬盘。</p>
+<p>软件部分需要懂得我们平常买的路由器里具体包含哪些功能，除了UI以外，有</p>
+<ul>
+<li><p>Routing</p>
+</li>
+<li><p>NAT</p>
+</li>
+<li><p>DHCP</p>
+</li>
+<li><p>DNS</p>
+</li>
+</ul>
+<p>很神奇的是，上面这些功能只需要在一个普通的linux系统上就能配置和实现，作者用的ubuntu。</p>
+<p>首先，作者的mini PC上有2个网口，一个LAN口，和一个WAN口，网线插到WAN口上。</p>
+<p>先手动配置这2个网口，编辑文件 /etc/network/interfaces</p>
+<pre class="line-numbers language-properties"><code class="language-properties"><span class="token comment" spellcheck="true"># This file describes the network interfaces available on your system</span>
+<span class="token comment" spellcheck="true"># and how to activate them. For more information, see interfaces(5).</span>
+
+<span class="token comment" spellcheck="true"># The loopback network interface</span>
+<span class="token attr-name">auto</span> <span class="token attr-value">lo</span>
+<span class="token attr-name">iface</span> <span class="token attr-value">lo inet loopback</span>
+
+<span class="token comment" spellcheck="true"># The WAN interface, marked Lan1 on the case</span>
+<span class="token attr-name">auto</span> <span class="token attr-value">p4p1</span>
+<span class="token attr-name">iface</span> <span class="token attr-value">p4p1 inet dhcp</span>
+
+<span class="token comment" spellcheck="true"># The LAN interface, marked Lan2 on the case</span>
+<span class="token attr-name">auto</span> <span class="token attr-value">p1p1</span>
+<span class="token attr-name">iface</span> <span class="token attr-value">p1p1 inet static</span>
+<span class="token attr-name">  address</span> <span class="token attr-value">192.168.99.1</span>
+<span class="token attr-name">  netmask</span> <span class="token attr-value">255.255.255.0</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>可以看到这里p4p1是WAN口，p1p1是LAN口。</p>
+<p><strong>路由</strong></p>
+<p>配置路由，就是配置IP packet转发，非常简单，编辑文件 /etc/sysctl.conf</p>
+<pre class="line-numbers language-shell"><code class="language-shell"># Uncomment the next line to enable packet forwarding for IPv4
+net.ipv4.ip_forward=1
+
+# Uncomment the next line to enable packet forwarding for IPv6
+#  Enabling this option disables Stateless Address Autoconfiguration
+#  based on Router Advertisements for this host
+#net.ipv6.conf.all.forwarding=1<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>如上，设置 net.ipv4.ip_forward=1 即可。</p>
+<p><strong>创建 iptables 规则文件</strong></p>
+<p>为了方便管理，作者建了一个 iptables 规则文件 /etc/network/if-pre-up.d/iptables ，之后对 iptables的修改都在这个文件里，每次修改完，只需要执行 /etc/network/if-pre-up.d/iptables 即可生效，注意设立需要设置该文件的访问权限为755，root可以可读可写可执行，其他用户可读可执行。如下：</p>
+<pre class="line-numbers language-bash"><code class="language-bash"><span class="token shebang important">#!/bin/sh</span>
+/sbin/iptables-restore <span class="token operator">&lt;</span> /etc/network/iptables<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>可以看到它执行了 /etc/network/iptables 里的内容，如下：</p>
+<pre class="line-numbers language-css"><code class="language-css">*<span class="token property">nat</span>
+<span class="token punctuation">:</span>PREROUTING ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+<span class="token punctuation">:</span>INPUT ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+<span class="token punctuation">:</span>OUTPUT ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+<span class="token punctuation">:</span>POSTROUTING ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+
+COMMIT
+
+*<span class="token property">filter</span>
+<span class="token punctuation">:</span>INPUT ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+<span class="token punctuation">:</span>FORWARD ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+<span class="token punctuation">:</span>OUTPUT ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+
+# Service rules
+-A INPUT -j DROP
+
+# Forwarding rules
+-A FORWARD -j DROP
+
+COMMIT<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这个文件里有2种 iptable 规则，一个是nat，一个是filter。后续看到具体的用途。注意，这里filter规则里，所有的input和forward请求都会drop，所以我们的路由规则实际上是非常严格的，后面会按照需求逐渐放开权限。</p>
+<p><strong>NAT</strong></p>
+<p>nat其实就在nat规则链里添加一条命令的事。</p>
+<pre class="line-numbers language-css"><code class="language-css">*<span class="token property">nat</span>
+<span class="token punctuation">:</span>PREROUTING ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+<span class="token punctuation">:</span>INPUT ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+<span class="token punctuation">:</span>OUTPUT ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+<span class="token punctuation">:</span>POSTROUTING ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+
+# p<span class="token number">4</span>p<span class="token number">1</span> is WAN interface, #p<span class="token number">1</span>p<span class="token number">1</span> is LAN interface
+-A POSTROUTING -o p<span class="token number">4</span>p<span class="token number">1</span> -j MASQUERADE
+
+COMMIT<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>所有去到WAN口的packet都执行masquerade。</p>
+<p><strong>DHCP 和 DNS</strong></p>
+<p>因为实在太简单，这连个步骤合成一个。</p>
+<p>安装dhcp和dns对应的软件。</p>
+<pre class="line-numbers language-sql"><code class="language-sql">sudo apt<span class="token operator">-</span>get install isc<span class="token operator">-</span>dhcp<span class="token operator">-</span>server
+sudo apt<span class="token operator">-</span>get install bind9<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>编辑文件 /etc/dhcp/dhcpd.conf：</p>
+<pre class="line-numbers language-nginx"><code class="language-nginx">subnet <span class="token number">192.168</span><span class="token punctuation">.</span><span class="token number">99.0</span> netmask <span class="token number">255.255</span><span class="token punctuation">.</span><span class="token number">255.0</span> <span class="token punctuation">{</span>
+  range <span class="token number">192.168</span><span class="token punctuation">.</span><span class="token number">99.100</span> <span class="token number">192.168</span><span class="token punctuation">.</span><span class="token number">99.199</span><span class="token punctuation">;</span>
+  option routers <span class="token number">192.168</span><span class="token punctuation">.</span><span class="token number">99.1</span><span class="token punctuation">;</span>
+  option domain<span class="token operator">-</span>name<span class="token operator">-</span>servers <span class="token number">192.168</span><span class="token punctuation">.</span><span class="token number">99.1</span><span class="token punctuation">;</span>
+  option broadcast<span class="token operator">-</span>address <span class="token number">192.168</span><span class="token punctuation">.</span><span class="token number">99.255</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>很简单，就不解释了。</p>
+<p>这里虽然安装好了，但是还不够，需要配置iptables规则。允许局域网里的其他节点访问我们的路由器。因为目前为止，我们的路由器仅仅自己可以访问公网，但它不能接收局域网的请求，也不会转发数据包。</p>
+<pre class="line-numbers language-sql"><code class="language-sql"><span class="token comment" spellcheck="true"># Service rules</span>
+
+<span class="token comment" spellcheck="true"># basic global accept rules - ICMP, loopback, traceroute, established all accepted</span>
+<span class="token operator">-</span>A INPUT <span class="token operator">-</span>s <span class="token number">127.0</span><span class="token punctuation">.</span><span class="token number">0.0</span><span class="token operator">/</span><span class="token number">8</span> <span class="token operator">-</span><span class="token number">d</span> <span class="token number">127.0</span><span class="token punctuation">.</span><span class="token number">0.0</span><span class="token operator">/</span><span class="token number">8</span> <span class="token operator">-</span>i lo <span class="token operator">-</span>j ACCEPT
+<span class="token operator">-</span>A INPUT <span class="token operator">-</span>p icmp <span class="token operator">-</span>j ACCEPT
+<span class="token operator">-</span>A INPUT <span class="token operator">-</span>m state <span class="token comment" spellcheck="true">--state ESTABLISHED -j ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># enable traceroute rejections to get sent out</span>
+<span class="token operator">-</span>A INPUT <span class="token operator">-</span>p udp <span class="token operator">-</span>m udp <span class="token comment" spellcheck="true">--dport 33434:33523 -j REJECT --reject-with icmp-port-unreachable</span>
+
+<span class="token comment" spellcheck="true"># DNS - accept from LAN</span>
+<span class="token operator">-</span>A INPUT <span class="token operator">-</span>i p1p1 <span class="token operator">-</span>p tcp <span class="token comment" spellcheck="true">--dport 53 -j ACCEPT</span>
+<span class="token operator">-</span>A INPUT <span class="token operator">-</span>i p1p1 <span class="token operator">-</span>p udp <span class="token comment" spellcheck="true">--dport 53 -j ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># SSH - accept from LAN</span>
+<span class="token operator">-</span>A INPUT <span class="token operator">-</span>i p1p1 <span class="token operator">-</span>p tcp <span class="token comment" spellcheck="true">--dport 22 -j ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># DHCP client requests - accept from LAN</span>
+<span class="token operator">-</span>A INPUT <span class="token operator">-</span>i p1p1 <span class="token operator">-</span>p udp <span class="token comment" spellcheck="true">--dport 67:68 -j ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># drop all other inbound traffic</span>
+<span class="token operator">-</span>A INPUT <span class="token operator">-</span>j <span class="token keyword">DROP</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p><strong>访问外网</strong></p>
+<p>这是一个基本功能，需要2条规则。一个是conntrack，一个是把LAN</p>
+<p>口的请求都转发到WAN口上。</p>
+<pre class="line-numbers language-sql"><code class="language-sql"><span class="token comment" spellcheck="true"># Forwarding rules</span>
+
+<span class="token comment" spellcheck="true"># forward packets along established/related connections</span>
+<span class="token operator">-</span>A FORWARD <span class="token operator">-</span>m conntrack <span class="token comment" spellcheck="true">--ctstate RELATED,ESTABLISHED -j ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># forward from LAN (p1p1) to WAN (p4p1)</span>
+<span class="token operator">-</span>A FORWARD <span class="token operator">-</span>i p1p1 <span class="token operator">-</span>o p4p1 <span class="token operator">-</span>j ACCEPT
+
+<span class="token comment" spellcheck="true"># drop all other forwarded traffic</span>
+<span class="token operator">-</span>A FORWARD <span class="token operator">-</span>j <span class="token keyword">DROP</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>到这一步，一个基本路由器的功能都实现了。</p>
+<p><strong>端口转发</strong></p>
+<p>实现端口转发的目的是可以让公网直接连局域网的服务器，一般用户实际上没有这个需求。在普通的路由器里可以通过UI设置，但在我们自己打造的路由器，每一条转发规则，需要在路由表里修改两项。</p>
+<p>nat规则：</p>
+<pre class="line-numbers language-css"><code class="language-css">*<span class="token property">nat</span>
+<span class="token punctuation">:</span>PREROUTING ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+<span class="token punctuation">:</span>INPUT ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+<span class="token punctuation">:</span>OUTPUT ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+<span class="token punctuation">:</span>POSTROUTING ACCEPT [<span class="token property">0</span><span class="token punctuation">:</span><span class="token number">0</span>]
+
+# p<span class="token number">4</span>p<span class="token number">1</span> is WAN interface, #p<span class="token number">1</span>p<span class="token number">1</span> is LAN interface
+-A POSTROUTING -o p<span class="token number">4</span>p<span class="token number">1</span> -j MASQUERADE
+
+# NAT <span class="token property">pinhole</span><span class="token punctuation">:</span> HTTP from WAN to LAN
+-A PREROUTING -p tcp -m tcp -i p<span class="token number">4</span>p<span class="token number">1</span> --dport <span class="token number">80</span> -j DNAT --to-destination <span class="token number">192.168.99.</span><span class="token property">100</span><span class="token punctuation">:</span><span class="token number">80</span>
+
+COMMIT<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>filter规则：</p>
+<pre class="line-numbers language-sql"><code class="language-sql"><span class="token comment" spellcheck="true"># Forwarding rules</span>
+
+<span class="token comment" spellcheck="true"># forward packets along established/related connections</span>
+<span class="token operator">-</span>A FORWARD <span class="token operator">-</span>m conntrack <span class="token comment" spellcheck="true">--ctstate RELATED,ESTABLISHED -j ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># forward from LAN (p1p1) to WAN (p4p1)</span>
+<span class="token operator">-</span>A FORWARD <span class="token operator">-</span>i p1p1 <span class="token operator">-</span>o p4p1 <span class="token operator">-</span>j ACCEPT
+
+<span class="token comment" spellcheck="true"># allow traffic from our NAT pinhole</span>
+<span class="token operator">-</span>A FORWARD <span class="token operator">-</span>p tcp <span class="token operator">-</span><span class="token number">d</span> <span class="token number">192.168</span><span class="token punctuation">.</span><span class="token number">99.100</span> <span class="token comment" spellcheck="true">--dport 80 -j ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># drop all other forwarded traffic</span>
+<span class="token operator">-</span>A FORWARD <span class="token operator">-</span>j <span class="token keyword">DROP</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>最终，完整的 iptables 规则文件 /etc/network/iptables：</p>
+<pre class="line-numbers language-ruby"><code class="language-ruby"><span class="token operator">*</span>nat
+<span class="token symbol">:PREROUTING</span> <span class="token constant">ACCEPT</span> <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">:</span><span class="token number">0</span><span class="token punctuation">]</span>
+<span class="token symbol">:INPUT</span> <span class="token constant">ACCEPT</span> <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">:</span><span class="token number">0</span><span class="token punctuation">]</span>
+<span class="token symbol">:OUTPUT</span> <span class="token constant">ACCEPT</span> <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">:</span><span class="token number">0</span><span class="token punctuation">]</span>
+<span class="token symbol">:POSTROUTING</span> <span class="token constant">ACCEPT</span> <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">:</span><span class="token number">0</span><span class="token punctuation">]</span>
+
+<span class="token comment" spellcheck="true"># p4p1 is WAN interface, #p1p1 is LAN interface</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">POSTROUTING</span> <span class="token operator">-</span>o p4p1 <span class="token operator">-</span>j <span class="token constant">MASQUERADE</span>
+
+<span class="token comment" spellcheck="true"># NAT pinhole: HTTP from WAN to LAN</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">PREROUTING</span> <span class="token operator">-</span>p tcp <span class="token operator">-</span>m tcp <span class="token operator">-</span>i p4p1 <span class="token operator">--</span>dport <span class="token number">80</span> <span class="token operator">-</span>j <span class="token constant">DNAT</span> <span class="token operator">--</span>to<span class="token operator">-</span>destination <span class="token number">192.168</span><span class="token punctuation">.</span><span class="token number">99.100</span><span class="token punctuation">:</span><span class="token number">80</span>
+
+<span class="token constant">COMMIT</span>
+
+<span class="token operator">*</span>filter
+<span class="token symbol">:INPUT</span> <span class="token constant">ACCEPT</span> <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">:</span><span class="token number">0</span><span class="token punctuation">]</span>
+<span class="token symbol">:FORWARD</span> <span class="token constant">ACCEPT</span> <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">:</span><span class="token number">0</span><span class="token punctuation">]</span>
+<span class="token symbol">:OUTPUT</span> <span class="token constant">ACCEPT</span> <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">:</span><span class="token number">0</span><span class="token punctuation">]</span>
+
+<span class="token comment" spellcheck="true"># Service rules</span>
+
+<span class="token comment" spellcheck="true"># basic global accept rules - ICMP, loopback, traceroute, established all accepted</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">INPUT</span> <span class="token operator">-</span>s <span class="token number">127.0</span><span class="token punctuation">.</span><span class="token number">0.0</span><span class="token operator">/</span><span class="token number">8</span> <span class="token operator">-</span>d <span class="token number">127.0</span><span class="token punctuation">.</span><span class="token number">0.0</span><span class="token operator">/</span><span class="token number">8</span> <span class="token operator">-</span>i lo <span class="token operator">-</span>j <span class="token constant">ACCEPT</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">INPUT</span> <span class="token operator">-</span>p icmp <span class="token operator">-</span>j <span class="token constant">ACCEPT</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">INPUT</span> <span class="token operator">-</span>m state <span class="token operator">--</span>state <span class="token constant">ESTABLISHED</span> <span class="token operator">-</span>j <span class="token constant">ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># enable traceroute rejections to get sent out</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">INPUT</span> <span class="token operator">-</span>p udp <span class="token operator">-</span>m udp <span class="token operator">--</span>dport <span class="token number">33434</span><span class="token punctuation">:</span><span class="token number">33523</span> <span class="token operator">-</span>j <span class="token constant">REJECT</span> <span class="token operator">--</span>reject<span class="token operator">-</span>with icmp<span class="token operator">-</span>port<span class="token operator">-</span>unreachable
+
+<span class="token comment" spellcheck="true"># DNS - accept from LAN</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">INPUT</span> <span class="token operator">-</span>i p1p1 <span class="token operator">-</span>p tcp <span class="token operator">--</span>dport <span class="token number">53</span> <span class="token operator">-</span>j <span class="token constant">ACCEPT</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">INPUT</span> <span class="token operator">-</span>i p1p1 <span class="token operator">-</span>p udp <span class="token operator">--</span>dport <span class="token number">53</span> <span class="token operator">-</span>j <span class="token constant">ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># SSH - accept from LAN</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">INPUT</span> <span class="token operator">-</span>i p1p1 <span class="token operator">-</span>p tcp <span class="token operator">--</span>dport <span class="token number">22</span> <span class="token operator">-</span>j <span class="token constant">ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># DHCP client requests - accept from LAN</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">INPUT</span> <span class="token operator">-</span>i p1p1 <span class="token operator">-</span>p udp <span class="token operator">--</span>dport <span class="token number">67</span><span class="token punctuation">:</span><span class="token number">68</span> <span class="token operator">-</span>j <span class="token constant">ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># drop all other inbound traffic</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">INPUT</span> <span class="token operator">-</span>j <span class="token constant">DROP</span>
+
+<span class="token comment" spellcheck="true"># Forwarding rules</span>
+
+<span class="token comment" spellcheck="true"># forward packets along established/related connections</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">FORWARD</span> <span class="token operator">-</span>m conntrack <span class="token operator">--</span>ctstate <span class="token constant">RELATED</span><span class="token punctuation">,</span><span class="token constant">ESTABLISHED</span> <span class="token operator">-</span>j <span class="token constant">ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># forward from LAN (p1p1) to WAN (p4p1)</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">FORWARD</span> <span class="token operator">-</span>i p1p1 <span class="token operator">-</span>o p4p1 <span class="token operator">-</span>j <span class="token constant">ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># allow traffic from our NAT pinhole</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">FORWARD</span> <span class="token operator">-</span>p tcp <span class="token operator">-</span>d <span class="token number">192.168</span><span class="token punctuation">.</span><span class="token number">99.100</span> <span class="token operator">--</span>dport <span class="token number">80</span> <span class="token operator">-</span>j <span class="token constant">ACCEPT</span>
+
+<span class="token comment" spellcheck="true"># drop all other forwarded traffic</span>
+<span class="token operator">-</span><span class="token constant">A</span> <span class="token constant">FORWARD</span> <span class="token operator">-</span>j <span class="token constant">DROP</span>
+
+<span class="token constant">COMMIT</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>最后，作者还做了一些性能测试，我不太关注，就不记录了。</p>
+<p>Refer:</p>
+<p><a href="https://arstechnica.com/gadgets/2016/04/the-ars-guide-to-building-a-linux-router-from-scratch/" target="_blank" rel="noopener">https://arstechnica.com/gadgets/2016/04/the-ars-guide-to-building-a-linux-router-from-scratch/</a></p>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/l3_ZYOvq43ml5OH_Fj6qGg" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2021/02/14/2021年春联/">
+        ← prev <!--2021年春联-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2020/12/31/C++从2006到2020-4.1-C++11-并发/">
+        <!--C++从2006到2020 - 4.1 C++11: 并发--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

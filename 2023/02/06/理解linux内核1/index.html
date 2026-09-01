@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2023/02/06/理解linux内核1/">
+        <title>理解linux内核1 | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">February 6, 2023</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/linux/">linux</a><a href="/tags/kernel/">kernel</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">理解linux内核1</h1>
+  <section class="post-content article-entry">
+    <p>这两天看了下《linux内核源代码情景分析》第一章的内容，看的过程中理解了一些内容，此处记录一下。</p>
+<p>以前了解linux内核，只知道它是一个宏内核，包括内核以及各种设备驱动程序，然后内核中又包括进程调度、内存管理、中断、文件系统等。但是看了MIT6.828的课程安排（只看了前两节课），一直在想两个问题：</p>
+<ul>
+<li><p>为什么要从系统调用开始讲起？这是第一节的内容</p>
+</li>
+<li><p>为什么接下来就马上讲paging？</p>
+</li>
+</ul>
+<p>第一个问题可能比较简单，因为系统调用是和内核直接交互的接口，让学生熟悉系统调用，可以对linux内核的功能有最直接的感受，但为什么学了系统调用，了解了fork/exec之后，接下来的内容就是内存管理？然后在看《情景分析》的时候有了答案，这本书也是把内存管理放到了第二章，但在第一章里，它先讲了x86 CPU的寻址方式，以及i386的页式内存管理，这里面比较重要的是，作者从8位操作系统，到16位，最后到32位，以及其中可能出现的24位，介绍了CPU的发展历史；同时又先讲了段式内存管理，然后才讲了页式内存管理，讲到页式内存管理的时候，也提了一下内存页面的换入换出。等到把这些内容都读完，我（比较愚蠢）才恍然大悟，我们说操作系统的作用是帮助用户管理硬件资源，但实际上这里，在理解内核的时候，我们只需要认为操作系统的作用是管理CPU（其他的设备都无需理会，而所谓内存管理，则是管理好CPU提供的与内存访问有关的4~6个寄存器），或者说，是在Intel提供的CPU的功能基础上，如何更有效地把这些功能提供给用户。这就是为什么作者一开始就需要先介绍CPU的知识，同时，因为所谓的现代CPU，从80386开始，它为什么称为现代CPU，就是因为它提供了保护模式和页式内存管理，而linux就是构建在这两个的基础上，而对于我们的计算机，因为它的核心基本就是读存取指令和计算，而从如何利用好CPU的层面思考，那么内存管理，也就是如何把物理内存提供给内核或者用户，就属于最基础的内容，而只有实现了这一部分功能，后续的进程调度等才有可能。</p>
+<p>虽然我还没有开始看中断相关的内容，但从这里也可以理解到，以前觉得中断很复杂，但实际上，它不过是CPU提供的一个功能，用来处理与其他外部设备之间的交互，而linux内核就在CPU提供的中断基础上，做了抽象，最终给到内核、设备驱动程序及系统调用等来使用。</p>
+<p>比较有意思的是，不止一处资料提到Intel CPU的GDT设计得非常混乱，同一个字段被拆成两部分分别放在了不同位置，一是因为它要兼容历史设计，二十设计的过程不断改进打补丁，导致成了现在的样子；而MIT6.828使用的是Risc-V处理器，它就没有这个问题，就简化了内存管理，没有与关键设计无关的部分，更适合于教学。</p>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/HyliIQLOxqx_iRzoS32nbg" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2023/02/07/Packer制作ubuntu-cloud-image/">
+        ← prev <!--Packer制作ubuntu cloud image-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2023/02/05/ironic-笔记/">
+        <!--ironic 笔记--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

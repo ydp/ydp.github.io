@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2016/09/08/golang操作mysql指南/">
+        <title>golang操作mysql教程 | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">September 8, 2016</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/golang/">golang</a><a href="/tags/mysql/">mysql</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">golang操作mysql教程</h1>
+  <section class="post-content article-entry">
+    <p>在go语言里访问sql数据库，一般都是用 database/sql 这个包</p>
+<h4 id="Overview"><a href="#Overview" class="headerlink" title="Overview"></a>Overview</h4><p>访问db使用 sql.DB，使用这个类型可以创建statements, transactions，执行查询和获取结果。但需要注意，sql.DB不是一个数据库连接。</p>
+<p>sql.DB完成的任务：</p>
+<ul>
+<li>依赖驱动去打开和关闭真正的数据库连接</li>
+<li>按需管理连接池</li>
+</ul>
+<h4 id="数据库驱动"><a href="#数据库驱动" class="headerlink" title="数据库驱动"></a>数据库驱动</h4><p>进行任何数据库操作都需要先引入驱动包:</p>
+<pre class="line-numbers language-golang"><code class="language-golang">import (
+    "database/sql"
+    _ "github.com/go-sql-driver/mysql"
+)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这里匿名地引入了一个mysql驱动包，下划线符号使驱动包中的任何符号都在该文件中不可见。</p>
+<h4 id="建立连接"><a href="#建立连接" class="headerlink" title="建立连接"></a>建立连接</h4><p>先上代码：</p>
+<pre class="line-numbers language-golang"><code class="language-golang">func main() {
+    db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/hello")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer db.Close()
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>以上：</p>
+<ul>
+<li>Open语句的第一个参数指定数据库类型，还可以使用 github.com/mattn/go-sqlite3  或 github.com/lib/pq</li>
+<li>Open语句的第二个参数指定数据库连接信息</li>
+<li>记得必须要进行错误处理</li>
+<li>使用defer 安全关闭连接</li>
+</ul>
+<p>如果需要延迟连接数据库，可以先检查数据库能否连接成功，如下:</p>
+<pre class="line-numbers language-golang"><code class="language-golang">err = db.Ping()
+if err != nil {
+    /// do something here
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>不要频繁的打开和关闭数据库，最好，为每个数据库只创建一个 sql.DB，如果需要使用就传过去就行了。<br>如果不合理使用sql.DB，就会很快耗尽网络资源，或挤压很多处于 TIME_WAIT状态的连接。</p>
+<h4 id="从数据库获取数据"><a href="#从数据库获取数据" class="headerlink" title="从数据库获取数据"></a>从数据库获取数据</h4><pre class="line-numbers language-golang"><code class="language-golang">var (
+    id int
+    name string
+)
+rows, err := db.Query("select id, name from users where id = ?", 1)
+if err != nil {
+    log.Fatal(err)
+}
+defer rows.Close()
+for rows.Next() {
+    err := rows.Scan(&id, &name)
+    if err != nil {
+        log.Fatal(err)
+    }
+    log.Println(id, name)
+}
+err = rows.Err()
+if err != nil {
+    log.Fatal(err)
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="prepare查询"><a href="#prepare查询" class="headerlink" title="prepare查询"></a>prepare查询</h4><pre class="line-numbers language-golang"><code class="language-golang">stmt, err := db.Prepare("select id, name from users where id = ?")
+if err != nil {
+        log.Fatal(err)
+}
+defer stmt.Close()
+rows, err := stmt.Query(1)
+if err != nil {
+        log.Fatal(err)
+}
+defer rows.Close()
+for rows.Next() {
+        // ...
+}
+if err = rows.Err(); err != nil {
+        log.Fatal(err)
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="单行查询"><a href="#单行查询" class="headerlink" title="单行查询"></a>单行查询</h4><pre class="line-numbers language-golang"><code class="language-golang">var name string
+err = db.QueryRow("select name from users where id = ?", 1).Scan(&name)
+if err != nil {
+        log.Fatal(err)
+}
+fmt.Println(name)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="prepare单行查询"><a href="#prepare单行查询" class="headerlink" title="prepare单行查询"></a>prepare单行查询</h4><pre class="line-numbers language-golang"><code class="language-golang">stmt, err := db.Prepare("select name from users where id = ?")
+if err != nil {
+        log.Fatal(err)
+}
+var name string
+err = stmt.QueryRow(1).Scan(&name)
+if err != nil {
+        log.Fatal(err)
+}
+fmt.Println(name)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="更新数据"><a href="#更新数据" class="headerlink" title="更新数据"></a>更新数据</h4><pre class="line-numbers language-golang"><code class="language-golang">stmt, err := db.Prepare("INSERT INTO users(name) VALUES(?)")
+if err != nil {
+        log.Fatal(err)
+}
+res, err := stmt.Exec("Dolly")
+if err != nil {
+        log.Fatal(err)
+}
+lastId, err := res.LastInsertId()
+if err != nil {
+        log.Fatal(err)
+}
+rowCnt, err := res.RowsAffected()
+if err != nil {
+        log.Fatal(err)
+}
+log.Printf("ID = %d, affected = %d\n", lastId, rowCnt)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>注意不要用 query更新数据，即使你不关心返回结果，看下面两个句子，一对一错:</p>
+<pre class="line-numbers language-golang"><code class="language-golang">_, err := db.Exec("DELETE FROM users")  // OK
+_, err := db.Query("DELETE FROM users") // BAD<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h4 id="事务"><a href="#事务" class="headerlink" title="事务"></a>事务</h4><p>本文翻译自: <a href="http://go-database-sql.org/index.html" target="_blank" rel="noopener">Go database/sql tutorial</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2016/09/08/scala起步/">
+        ← prev <!--scala入门-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2016/09/08/scylla-faq/">
+        <!--ScyllaDB FAQ--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

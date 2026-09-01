@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2021/03/11/What-is-Candidate-Sampling/">
+        <title>What is Candidate Sampling | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">March 11, 2021</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/machine-learning/">machine learning</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">What is Candidate Sampling</h1>
+  <section class="post-content article-entry">
+    <p>假设我们有一个多分类问题，当每个训练样本 由一个上下文和目标组成，其中表示特征，是一个小的目标集合（可能包括多个类别），但是属于一个巨大的全集。例如，给定句子之前的单词，预测下一个单词（或可能的单词集合）即属于这类问题。</p>
+<p>我们希望学习一个复杂的函数，能够通过特征来描述类别的复杂性。例如，给出特征后预测每个类别的可能性。</p>
+<p>softmax、逻辑回归这类“全面”的训练方法需要为每一个类别计算。当非常大时，训练会非常的耗时。</p>
+<p>“候选采样（Candidate Sampling）”这种训练方法构建了一个训练任务，对于每个样本， 我们只需要估计一个很小的候选类别集合。一种典型的思路是，候选集合由目标类和从中随机选择的其他类别 的并集组成</p>
+<p>随机选择的可以依赖或者不依赖和（或）.</p>
+<p>训练算法采用神经网络的形式，表示的网络层采用后向传播算法来计算损失函数</p>
+<p>Candidate Sampling算法合集</p>
+<p><img src="/images/wechat/What-is-Candidate-Sampling/img01.png" alt></p>
+<ul>
+<li><p>，对于特定的的采样算法，给定特征，类别在采样类别集合中的概率(或者期望数量)。</p>
+</li>
+<li><p>，是一个任意函数(arbitrary function)，不依赖于候选集合。因为softmax引入了标准化，所以加上不会影响计算好的概率。</p>
+</li>
+<li><p>在本例中，NCE和负采样中，是一个多标签集合，表示在中的期望数量，类似的，NCE、负采样和Sampled Logistic中的也是一个多标签集合，表示在中的期望数量表示在中的期望数量</p>
+</li>
+</ul>
+<p>Sampled Softmax</p>
+<p>(一种训练速度更快的softmax分类器)</p>
+<p>参考：<a href="http://arxiv.org/abs/1412.2007" target="_blank" rel="noopener">http://arxiv.org/abs/1412.2007</a></p>
+<p>假设我们有一个单标签问题，每一个训练样本表示了特征和单一的目标类别，我们将在给定特征下单一目标类为的概率定义为。</p>
+<p>我们需要训练一个函数来生成softmax logit - 也就是说给定，该类别的相关对数似然概率：</p>
+<p>其中，是不依赖于的任意函数</p>
+<p>未完待续</p>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/wEBp7wO5GIJaWEy8sLBJ2w" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2022/04/23/2022年春联/">
+        ← prev <!--2022年春联-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2021/02/15/并不了解的哥伦布/">
+        <!--并不了解的哥伦布--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

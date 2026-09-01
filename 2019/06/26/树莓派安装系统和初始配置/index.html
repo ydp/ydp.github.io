@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2019/06/26/树莓派安装系统和初始配置/">
+        <title>树莓派安装系统和初始配置 | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">June 26, 2019</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/linux/">linux</a><a href="/tags/raspberry-pi/">raspberry-pi</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">树莓派安装系统和初始配置</h1>
+  <section class="post-content article-entry">
+    <p>1 下载系统：</p>
+<p>点“阅读原文”获取地址</p>
+<p>下载完成是一个zip文件，需要解压，解压完得到文件 <code>2019-04-08-raspbian-stretch-full.img</code></p>
+<p>2 烧写镜像</p>
+<p>把micro SD用读卡器连接mac，找到设备:</p>
+<pre><code>$ df
+...
+/dev/disk2s1    ...</code></pre><p>卸载设备：</p>
+<pre><code>$ diskutil unmount /dev/disk2s1</code></pre><p>查看内存卡名称：</p>
+<pre><code>$ diskutil list
+/dev/disk2 (internal, physical):
+  #:        TYPE NAME                    SIZE        IDENTIFIER
+  0:        FDisk_partition_scheme        *31.6 GB    disk2
+  ...</code></pre><p>烧写镜像：</p>
+<pre><code>sudo dd bs=4m if=2019-04-08-raspbian-stretch-full.img of=/dev/rdisk2</code></pre><p>3 设置树莓派连接wifi和ssh登录</p>
+<p>不需要显示器。</p>
+<p>烧写完镜像后，在 <code>/Volumes/</code> 下会多一个boot目录，在该目录下创建文件ssh，内容为空即可。</p>
+<p>再创建文件 <code>wpa_supplicant.conf</code>，内容：</p>
+<pre><code>country=CN
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+
+network={
+    ssid=&quot;HUAWEI-PEWJ9V&quot;
+    psk=&quot;xxxxxxx&quot;
+    key_mgmt=WPA-PSK
+    priority=1
+}</code></pre><p>取下SD卡，插回树莓派，启动，通过路由器即可发现内网IP，登录</p>
+<pre><code>ssh pi@192.168.0.150</code></pre><p>pi账户初始默认密码 <code>raspberry</code></p>
+<p>4 设置外网直接访问家里的树莓派</p>
+<p>网上有很多方法设置（联通/电信），但我试了都不行，是因为光猫现在软件版本比较高做了很多限制。</p>
+<p>虚拟主机端口映射不生效，DMZ主机不生效，无法修改桥接模式。</p>
+<p>给联通客服打电话，然后跟安装师傅说明情况，他远程把光猫修改成了桥接模式，然后我直接用自己的华为路由器ppoe拨号上网。</p>
+<p>这相当于直接把华为路由器暴露给了公网，光猫只是一个普通的通信隧道。</p>
+<p>华为路由器可以设置端口映射，把树莓派的22端口映射为路由器的50022端口，即可从公网访问：</p>
+<pre><code>ssh pi@123.23.4.11 -p 50022</code></pre><p>5 树莓派定时汇报自己的公网IP</p>
+<p>下载这个代码：</p>
+<pre><code>git clone https://github.com/laixintao/Report-IP-hourly.git</code></pre><p>按照其中的说明：修改发送邮件的服务器地址、用户名、密码、接收人，以及当前目录的lastip文件路径。</p>
+<p>修改crontab执行的路径。</p>
+<p>修改获取公网ip的地址，因为代码里的地址很老已经无法访问了，以下是目前可用的地址：</p>
+<pre><code>curl ifconfig.me
+curl ident.me
+curl ipecho.net/plain
+curl whatismyip.akamai.com
+curl myip.dnsomatic.com</code></pre><p>6 免密码登录</p>
+<p>生成秘钥：</p>
+<pre><code>ssh-keygen -t rsa</code></pre><p>在文件<code>.ssh/authorized_keys</code>中添加本机的公钥</p>
+<p>7 修改apt源</p>
+<pre><code>sudo cp -r /etc/apt/sources.list /etc/apt/sources.list_bak
+sudo cp -r /etc/apt/sources.list.d/raspi.list /etc/apt/sources.list.d/raspi.list_bak</code></pre><p>写入新源<code>/etc/apt/sources.list</code></p>
+<pre><code>deb http://mirrors.ustc.edu.cn/raspbian/raspbian/ stretch main contrib non-free rpi</code></pre><p>文件<code>/etc/apt/sources.list.d/raspi.list</code></p>
+<pre><code>deb http://mirrors.ustc.edu.cn/archive.raspberrypi.org/ stretch main ui</code></pre><p>更新</p>
+<pre><code>sudo apt-get update</code></pre><p>8 修改pip源</p>
+<p>创建文件<code>~/.pip/pip.conf</code>，写入内容</p>
+<pre><code>[global]
+timeout = 6000
+index-url = https://mirrors.aliyun.com/pypi/simple
+[install]
+use-mirrors = true
+mirrors = https://mirrors.aliyun.com/pypi/simple
+trusted-host = mirrors.aliyun.com</code></pre><p>参考：</p>
+<ol>
+<li><p><a href="https://link.zhihu.com/?target=http%3A//blog.tyrival.com/posts/pi-01-initial/" target="_blank" rel="noopener">https://link.zhihu.com/?target=http%3A//blog.tyrival.com/posts/pi-01-initial/</a></p>
+</li>
+<li><p><a href="https://link.zhihu.com/?target=https%3A//blog.csdn.net/lakeheart879/article/details/51799233" target="_blank" rel="noopener">https://link.zhihu.com/?target=https%3A//blog.csdn.net/lakeheart879/article/details/51799233</a></p>
+</li>
+<li><p><a href="https://zhuanlan.zhihu.com/p/35623414" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/35623414</a></p>
+</li>
+</ol>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/YkdsePR7QjtyJwqINxsBjA" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2020/03/15/keke-banana-gas-delivery-package/">
+        ← prev <!--爱吃香蕉的珂珂-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2017/06/21/perceptron-cpp-implementation/">
+        <!--感知机学习算法实现--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

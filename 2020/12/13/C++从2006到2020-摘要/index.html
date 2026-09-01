@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2020/12/13/C++从2006到2020-摘要/">
+        <title>C++从2006到2020 - 摘要 | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">December 13, 2020</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/cpp/">cpp</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">C++从2006到2020 - 摘要</h1>
+  <section class="post-content article-entry">
+    <p>原文地址 <a href="https://www.stroustrup.com/hopl20main-p5-p-bfc9cd4--final.pdf" target="_blank" rel="noopener">https://www.stroustrup.com/hopl20main-p5-p-bfc9cd4--final.pdf</a></p>
+<p>只算到06年，C++在工业界就已经使用了20年。这个时候，C++不仅包含1970年的时候C语言中引入的特性，也有2000年才加入的新特性。从06年到20年，C++开发者社区的人数从300万增加到了450万。这段时间发生了很多变化，新的编程模型被发明出来，硬件架构不断演进，新的应用领域受到了更多关注，好几个商业性和技术性俱佳的语言在争夺“语言霸权”。那么，C++作为一门古老而没有严格商业范畴的语言，如何在这种百家争鸣瞬息万变的时代里依旧繁华呢？</p>
+<p>本论文主要关注C++标准从2011到2020版本的重大变更。虽然C++标准库占了C++20标准的3/4，但本文的核心要点在于语言特性和这些特性所支持的编程技巧。</p>
+<p>本论文用了非常长的列表来记录C++语言特性的成长过程。探讨重要技术要点的同时也会有简短的代码片段展示其实践方式。不仅如此，本文也会向读者展示失败的语言特性提案，以及失败原因的深入探讨。本文也会从更长的时间维度提供一种视角，来让你看清这条时间长河里涌动的事实依据和特性溯源。毕竟，想法、物和塑造语言的过程才是最重要的。</p>
+<p>本文有几个主题：1. 在语言变革过程中为了保留C++本质而做出的努力 2. 易用性 3. 对泛型编程支持的改进 4. 更好的编译时编程支持 5. 对并发和并行编程的扩展支持 6. 维护对历史遗留代码的稳定支持。</p>
+<p>C++标准的演进是一个达成共识的过程。所以在这个过程中，在方向、设计哲学和原则上，就会有很多提案相互竞争并且（有礼貌地）冲突。C++社区比以前更大更活跃，每年有3次长达一周的会议，每次会议至少250参加，还不算线上参与者。尽管不一定能成功，但我们仍然试图减少因为委员会庞大而导致的效率低下，和对新进流行语言的过渡追捧所带来的影响。</p>
+<p>本论文要探讨的特定主题包括内存模型、并发和并行、编译时计算、移动语义、异常、lambda表达式和模块。事实证明，设计一种既满足模板参数需求——灵活而精确，又不增加运行时开销的语言机制是非常困难的。Concepts的设计历史可以上溯到1980年，其不断重复的设计涵盖了C++语言和泛型编程的多个关键问题。</p>
+<p>本论文的描述都是基于本人参与了很多关键性的事件和设计决策，而这些都存在于C++标准委员会档案库的上千篇论文和上百次会议记录里。</p>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/GHKj6MhsKpao3iZRvqLjGg" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2020/12/30/X509中的Basic-Constraints-extension/">
+        ← prev <!--X509中的Basic Constraints extension-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2020/03/15/keke-banana-gas-delivery-package/">
+        <!--爱吃香蕉的珂珂--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

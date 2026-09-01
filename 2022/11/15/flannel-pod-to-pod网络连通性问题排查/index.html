@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2022/11/15/flannel-pod-to-pod网络连通性问题排查/">
+        <title>flannel pod to pod网络连通性问题排查 | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">November 15, 2022</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/kubernetes/">kubernetes</a><a href="/tags/network/">network</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">flannel pod to pod网络连通性问题排查</h1>
+  <section class="post-content article-entry">
+    <p>最近我们在K8s产品里遇到了一个奇怪的问题，首先这是一个以flannel为CNI plugin的K8s cluster，相同的产品部署在aws、azure上都没有问题，在公司的公共虚拟服务上也没有问题，但在我们组里的物理机上部署的时候，发现cluster内部的pod与pod直接通信出了问题，并且在相同的环境里，上一个版本没有问题，但升级到新版本之后问题出现。这里分析了一下，得出如下结论：</p>
+<ul>
+<li><p>这个问题肯定始于当前所在的环境有关系的</p>
+</li>
+<li><p>我们产品与上一个版本之间的flannel版本并没有改变，唯一改变的是OS，从16.04升级到了22.04</p>
+</li>
+</ul>
+<p>阅读了一些flannel网络通信原理相关的文档，并进行tcpdump抓包后，发现</p>
+<ul>
+<li><p>从node1上的pod1到node2上的pod2，ping没有问题，说明icmp没问题，说明路由都是正常</p>
+</li>
+<li><p>从pod1访问pod2的 tcp/udp 包在node1的flannel.1和eth0上都能抓到，但在node2的eth0上抓不到，这个看来很像是被防火墙drop了</p>
+</li>
+<li><p>从pod1访问node2上的8472 udp端口，可以在node2的eth0上抓到，这个我不确定它到底说明了什么问题</p>
+</li>
+</ul>
+<p>然后因为flannel vxlan支持一些可配置的参数，我们的产品里都用的默认值：</p>
+<h3 id="VXLAN"><a href="#VXLAN" class="headerlink" title="VXLAN"></a>VXLAN</h3><p>Use in-kernel VXLAN to encapsulate the packets.</p>
+<p>Type and options:</p>
+<ul>
+<li><p><code>Type</code> (string): <code>vxlan</code></p>
+</li>
+<li><p><code>VNI</code> (number): VXLAN Identifier (VNI) to be used. On Linux, defaults to 1. On Windows should be greater than or equal to 4096.</p>
+</li>
+<li><p><code>Port</code> (number): UDP port to use for sending encapsulated packets. On Linux, defaults to kernel default, currently 8472, but on Windows, must be 4789.</p>
+</li>
+<li><p><code>GBP</code> (Boolean): Enable VXLAN Group Based Policy. Defaults to <code>false</code>. GBP is not supported on Windows</p>
+</li>
+<li><p><code>DirectRouting</code> (Boolean): Enable direct routes (like <code>host-gw</code>) when the hosts are on the same subnet. VXLAN will only be used to encapsulate packets to hosts on different subnets. Defaults to <code>false</code>. DirectRouting is not supported on Windows.</p>
+</li>
+<li><p><code>MacPrefix</code> (String): Only use on Windows, set to the MAC prefix. Defaults to <code>0E-2A</code>.</p>
+</li>
+</ul>
+<p>根据这些参数说明，我先尝试把DirectRouting改为true，然后网络就通了，所以可以断定问题出现在vxlan的overlay packet上。</p>
+<p>然后，我尝试设置了VNI number，但没什么用。</p>
+<p>又试着把Port改为8473，这下网络又通了，所以怀疑是overlay的端口与底层网络之间有冲突，尝试这搜了一下，搜到了文章</p>
+<blockquote>
+<p>记一次K8S VXLAN Overlay网络8472端口冲突问题的排查</p>
+</blockquote>
+<p>跟我遇到的现象几乎一样，又顺着vxlan的冲突问题进行了搜索发现了2个文章：</p>
+<blockquote>
+<p>exsi 使用 redhat8.4 搭建k8s集群，flannel vxlan 模式的不正常排错</p>
+<p>VMXNET3 v4 causes invalid checksums of inner packets of VXLAN tunnel (BZ#1960702)</p>
+</blockquote>
+<p>于是我也尝试了disable VM的checksum offload，这里port改回默认值，网络依然没问题，所以初步断定这就是root cause。</p>
+<p>然后又找到了calico相关的issue和fix</p>
+<p><a href="https://github.com/projectcalico/calico/issues/4727" target="_blank" rel="noopener">https://github.com/projectcalico/calico/issues/4727</a></p>
+<p><a href="https://github.com/projectcalico/calico/pull/6842" target="_blank" rel="noopener">https://github.com/projectcalico/calico/pull/6842</a></p>
+<p>最终决定我们的产品里也需要disable checksum offload。</p>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/qCcrtOFTrsGmMRn36lZbQw" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2022/12/10/k8s-cluster-set-up-on-bare-metal-w-o-ha/">
+        ← prev <!--k8s cluster set up on bare metal w/o ha-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2022/11/13/GTS-LMIA工签申请材料清单/">
+        <!--GTS LMIA工签申请材料清单--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

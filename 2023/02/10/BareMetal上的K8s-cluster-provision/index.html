@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2023/02/10/BareMetal上的K8s-cluster-provision/">
+        <title>BareMetal上的K8s cluster provision | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">February 10, 2023</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/kubernetes/">kubernetes</a><a href="/tags/bare-metal/">bare-metal</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">BareMetal上的K8s cluster provision</h1>
+  <section class="post-content article-entry">
+    <p>公有云上各厂家都提供了不同的容器平台，VMware也有以cluster api为核心的tkg产品，以自家实现的cluster api vsphere provider 为基础，可以在vsphere上随时创建K8s cluster。实际上，裸机也有同样的技术，那就是cluster api metal3 provider。</p>
+<p>当我们的机房里来了一批服务器后，</p>
+<p><img src="/images/wechat/BareMetal%E4%B8%8A%E7%9A%84K8s-cluster-provision/img01.png" alt></p>
+<p>首先，我们要求机房管理人员把机器安装到机柜里，插上电源，并且根据现在的机房vlan拓扑，插入网线，然后根据机器使用说明，初始化IPMI接口。最后，机房管理人员把这些机器的IPMI信息交付给我们，从这里开始，我们就可以远程管理这些机器，并为其部署K8s。</p>
+<ul>
+<li>IPMI：远程机器管理接口，更新的版本为redfish</li>
+</ul>
+<p>在openstack生态里，有一个子项目ironic，它可以用来对裸机部署OS，这个项目虽然是redhat维护，但同时也有多家服务器厂商为它提供“驱动”，这里的驱动就是能够帮忙远程管理机器的接口，虽然IPMI是主流，但也有不少其他服务器厂商有特定的接口，基本上市面上的所有接口，ironic都能兼容，即使不兼容，它也提供方法让用户自己实现。</p>
+<p>而在ironic之上，另外一个项目，baremetal-operator，它对ironic进行了封装，把所有ironic提供的功能通过K8s Custom Resource暴露给用户，而最核心的资源就是BareMetalHost，用户只需要定义bmh，就可以通过kubectl来对机器远程部署OS，很显然，这里bmh定义里最重要的输入就是IPMI信息。</p>
+<p>再往上，就有cluster api metal3 provider，它实现了bare metal上的cluster api provider，官方架构图：</p>
+<p><img src="/images/wechat/BareMetal%E4%B8%8A%E7%9A%84K8s-cluster-provision/img02.png" alt></p>
+<p>可以看到，与Machine对于的资源是Metal3Machine，而BareMetalHost才是Metal3Machine的具体实现。需要注意的是，这里bmh和cluster api是解耦的，所以它们是互相独立创建，Metal3Machine会寻找当前cluster里符合条件的bmh，并与之关联；在删除资源的时候，删除cluster也不会删除bmh。</p>
+<p>当然，metal3里为了实现cluster api provider的contract，做了比较多的事情，这里面包括</p>
+<ul>
+<li><p>Node Image的准备，事实上，所有K8s provision系统都需要准备node image，只不过其他系统里image是给VM用，这里的image是直接安装在物理服务器上的</p>
+</li>
+<li><p>Control plane loadbalancer的选取，tkg里用了kube-vip或者商用的avi loadbalancer，公有云都有自己的LB方案，metal3选用的则是keepalived</p>
+</li>
+<li><p>CNI，metal3用了calico，不过只要熟悉cluster api提供的kubeadmconfigtemplate就很容易把它替换成其他产品</p>
+</li>
+<li><p>Runtime，metal3用了cri-o，因为runtime是直接包含在node image中，所以想要更换，并不容易，但也不是没有办法，如果熟悉了node image的制作过程，我们也可以制作自己的node image，从而替换runtime</p>
+</li>
+</ul>
+<p>值得注意的是，安装metal3并不需要下载源码，clusterctl两条命令就够了。不过，baremetal-operator如前所述，是独立的组件，需要单独安装，并且需要clone它的源码，安装的过程可能并不会很轻松。</p>
+<p>虽然过程艰难，但有了这一套技术，我们就可以在自家机房实现一个完整的容器云平台。无论是每个机柜对应一个workload cluster集群，还是跨机架创建workload cluster，只要安排好网络拓扑，保证management cluster的稳定性，就能对上层提供一个相对稳定的集群环境。</p>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/904ufkpwkPp4vP2X-9Qm5g" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2023/02/12/理解linux内核2-内存管理/">
+        ← prev <!--理解linux内核2-内存管理-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2023/02/07/Packer制作ubuntu-cloud-image/">
+        <!--Packer制作ubuntu cloud image--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

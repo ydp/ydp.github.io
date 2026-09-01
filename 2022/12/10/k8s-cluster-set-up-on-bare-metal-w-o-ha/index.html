@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2022/12/10/k8s-cluster-set-up-on-bare-metal-w-o-ha/">
+        <title>k8s cluster set up on bare metal w/o ha | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">December 10, 2022</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/kubernetes/">kubernetes</a><a href="/tags/bare-metal/">bare-metal</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">k8s cluster set up on bare metal w/o ha</h1>
+  <section class="post-content article-entry">
+    <p>Step 1 install containerd</p>
+<pre class="line-numbers language-sql"><code class="language-sql">sudo apt <span class="token keyword">update</span> <span class="token operator">-</span>y
+sudo apt install <span class="token operator">-</span>y <span class="token number">ca</span><span class="token operator">-</span>certificates curl gnupg lsb<span class="token operator">-</span><span class="token keyword">release</span>
+curl <span class="token operator">-</span>fsSL https:<span class="token comment" spellcheck="true">//download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg</span>
+echo "<span class="token number">deb</span> <span class="token punctuation">[</span>arch<span class="token operator">=</span>$<span class="token punctuation">(</span>dpkg <span class="token comment" spellcheck="true">--print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list</span>
+sudo apt <span class="token keyword">update</span> <span class="token operator">-</span>y
+sudo apt install <span class="token operator">-</span>y containerd<span class="token punctuation">.</span>io
+containerd config <span class="token keyword">default</span> <span class="token operator">|</span> sudo tee <span class="token operator">/</span>etc<span class="token operator">/</span>containerd<span class="token operator">/</span>config<span class="token punctuation">.</span>toml <span class="token operator">></span><span class="token operator">/</span>dev<span class="token operator">/</span><span class="token boolean">null</span> <span class="token number">2</span><span class="token operator">></span><span class="token operator">&amp;</span><span class="token number">1</span>
+sudo sed <span class="token operator">-</span>i <span class="token string">'s/SystemdCgroup \= false/SystemdCgroup \= true/g'</span> <span class="token operator">/</span>etc<span class="token operator">/</span>containerd<span class="token operator">/</span>config<span class="token punctuation">.</span>toml
+<span class="token comment" spellcheck="true"># sudo sed -i 's/^disabled_plugins \=/\#disabled_plugins \=/g' /etc/containerd/config.toml</span>
+sudo systemctl restart containerd
+wget https:<span class="token comment" spellcheck="true">//github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz</span>
+sudo tar zxvf crictl<span class="token operator">-</span>v1<span class="token number">.25</span><span class="token punctuation">.</span><span class="token number">0</span><span class="token operator">-</span>linux<span class="token operator">-</span>amd64<span class="token punctuation">.</span>tar<span class="token punctuation">.</span>gz <span class="token operator">-</span>C <span class="token operator">/</span>usr<span class="token operator">/</span>bin<span class="token operator">/</span>
+<span class="token comment" spellcheck="true"># Install cni plugins (not sure if this is actually needed)</span>
+sudo mkdir <span class="token operator">-</span>p <span class="token operator">/</span>opt<span class="token operator">/</span>cni<span class="token operator">/</span>bin<span class="token operator">/</span>
+wget https:<span class="token comment" spellcheck="true">//github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz</span>
+sudo tar Cxzvf <span class="token operator">/</span>opt<span class="token operator">/</span>cni<span class="token operator">/</span>bin cni<span class="token operator">-</span>plugins<span class="token operator">-</span>linux<span class="token operator">-</span>amd64<span class="token operator">-</span>v1<span class="token number">.1</span><span class="token punctuation">.</span><span class="token number">1</span><span class="token punctuation">.</span>tgz
+sudo systemctl restart containerd<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>Step 2 install kubeadm, kubelet, kubectl</p>
+<pre class="line-numbers language-sql"><code class="language-sql">sudo apt<span class="token operator">-</span>get <span class="token keyword">update</span> <span class="token operator">-</span>y
+sudo apt<span class="token operator">-</span>get install <span class="token operator">-</span>y apt<span class="token operator">-</span>transport<span class="token operator">-</span>https <span class="token number">ca</span><span class="token operator">-</span>certificates curl
+sudo curl <span class="token operator">-</span>fsSLo <span class="token operator">/</span>etc<span class="token operator">/</span>apt<span class="token operator">/</span>keyrings<span class="token operator">/</span>kubernetes<span class="token operator">-</span>archive<span class="token operator">-</span>keyring<span class="token punctuation">.</span>gpg https:<span class="token comment" spellcheck="true">//packages.cloud.google.com/apt/doc/apt-key.gpg</span>
+echo "<span class="token number">deb</span> <span class="token punctuation">[</span>signed<span class="token operator">-</span><span class="token keyword">by</span><span class="token operator">=</span><span class="token operator">/</span>etc<span class="token operator">/</span>apt<span class="token operator">/</span>keyrings<span class="token operator">/</span>kubernetes<span class="token operator">-</span>archive<span class="token operator">-</span>keyring<span class="token punctuation">.</span>gpg<span class="token punctuation">]</span> https:<span class="token comment" spellcheck="true">//apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list</span>
+sudo apt<span class="token operator">-</span>get <span class="token keyword">update</span> <span class="token operator">-</span>y
+sudo apt<span class="token operator">-</span>get install <span class="token operator">-</span>y kubelet kubeadm kubectl
+sudo apt<span class="token operator">-</span>mark hold kubelet kubeadm kubectl<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>Step 3 prepare host</p>
+<ul>
+<li><p>Unique hostname</p>
+</li>
+<li><p>control plane endpoint</p>
+</li>
+</ul>
+<pre class="line-numbers language-properties"><code class="language-properties"><span class="token attr-name">sudo</span> <span class="token attr-value">swapoff -a</span>
+<span class="token attr-name">sudo</span> <span class="token attr-value">sed -i '/swap.img/ s/^\(.*\)$/#\1/g' /etc/fstab</span>
+<span class="token attr-name">cat</span> <span class="token attr-value">&lt;&lt;EOF | sudo tee /etc/modules-load.d/containerd.conf</span>
+overlay
+br_netfilter
+EOF
+<span class="token attr-name">sudo</span> <span class="token attr-value">modprobe overlay</span>
+<span class="token attr-name">sudo</span> <span class="token attr-value">modprobe br_netfilter</span>
+<span class="token attr-name">cat</span> <span class="token attr-value">&lt;&lt;EOF | sudo tee /etc/sysctl.d/k8s.conf</span>
+<span class="token attr-name">net.bridge.bridge-nf-call-iptables</span>  <span class="token punctuation">=</span> <span class="token attr-value">1</span>
+<span class="token attr-name">net.ipv4.ip_forward</span>                 <span class="token punctuation">=</span> <span class="token attr-value">1</span>
+<span class="token attr-name">net.bridge.bridge-nf-call-ip6tables</span> <span class="token punctuation">=</span> <span class="token attr-value">1</span>
+EOF
+<span class="token attr-name">sudo</span> <span class="token attr-value">sysctl --system</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>Kubeadm config file</p>
+<pre class="line-numbers language-makefile"><code class="language-makefile"><span class="token symbol">kind</span><span class="token punctuation">:</span> ClusterConfiguration
+<span class="token symbol">apiVersion</span><span class="token punctuation">:</span> kubeadm.k8s.io/v1beta3
+<span class="token symbol">kubernetesVersion</span><span class="token punctuation">:</span> v1.25.5
+<span class="token symbol">controlPlaneEndpoint</span><span class="token punctuation">:</span> <span class="token string">"a.b.com"</span>
+<span class="token symbol">networking</span><span class="token punctuation">:</span>
+<span class="token symbol">podSubnet</span><span class="token punctuation">:</span> <span class="token string">"10.200.100.0/16"</span>
+---
+<span class="token symbol">Kind</span><span class="token punctuation">:</span> InitConfiguration
+<span class="token symbol">apiVersion</span><span class="token punctuation">:</span> kubeadm.k8s.io/v1beta3
+<span class="token symbol">localAPIEndpoint</span><span class="token punctuation">:</span>
+<span class="token symbol">advertiseAddress</span><span class="token punctuation">:</span> 10.106.5.1
+<span class="token symbol">bindPort</span><span class="token punctuation">:</span> 6443
+<span class="token symbol">nodeRegistration</span><span class="token punctuation">:</span>
+<span class="token symbol">criSocket</span><span class="token punctuation">:</span> <span class="token string">"/run/containerd/containerd.sock"</span>
+---
+<span class="token symbol">kind</span><span class="token punctuation">:</span> KubeletConfiguration
+<span class="token symbol">apiVersion</span><span class="token punctuation">:</span> kubelet.config.k8s.io/v1beta1
+<span class="token symbol">cgroupDriver</span><span class="token punctuation">:</span> systemd<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>Step 4 kubeadm init output</p>
+<pre class="line-numbers language-sql"><code class="language-sql">Your Kubernetes control<span class="token operator">-</span>plane has initialized successfully<span class="token operator">!</span>
+<span class="token keyword">To</span> <span class="token keyword">start</span> <span class="token keyword">using</span> your cluster<span class="token punctuation">,</span> you need <span class="token keyword">to</span> run the <span class="token keyword">following</span> <span class="token keyword">as</span> <span class="token number">a</span> regular <span class="token keyword">user</span>:
+mkdir <span class="token operator">-</span>p $HOME<span class="token operator">/</span><span class="token punctuation">.</span>kube
+sudo cp <span class="token operator">-</span>i <span class="token operator">/</span>etc<span class="token operator">/</span>kubernetes<span class="token operator">/</span>admin<span class="token punctuation">.</span>conf $HOME<span class="token operator">/</span><span class="token punctuation">.</span>kube<span class="token operator">/</span>config
+sudo chown $<span class="token punctuation">(</span>id <span class="token operator">-</span>u<span class="token punctuation">)</span>:$<span class="token punctuation">(</span>id <span class="token operator">-</span>g<span class="token punctuation">)</span> $HOME<span class="token operator">/</span><span class="token punctuation">.</span>kube<span class="token operator">/</span>config
+Alternatively<span class="token punctuation">,</span> <span class="token keyword">if</span> you are the root <span class="token keyword">user</span><span class="token punctuation">,</span> you can run:
+export KUBECONFIG<span class="token operator">=</span><span class="token operator">/</span>etc<span class="token operator">/</span>kubernetes<span class="token operator">/</span>admin<span class="token punctuation">.</span>conf
+You should now deploy <span class="token number">a</span> pod network <span class="token keyword">to</span> the cluster<span class="token punctuation">.</span>
+Run <span class="token string">"kubectl apply -f [podnetwork].yaml"</span> <span class="token keyword">with</span> one <span class="token keyword">of</span> the options listed at:
+https:<span class="token comment" spellcheck="true">//kubernetes.io/docs/concepts/cluster-administration/addons/</span>
+You can now <span class="token keyword">join</span> <span class="token keyword">any</span> number <span class="token keyword">of</span> control<span class="token operator">-</span>plane nodes <span class="token keyword">by</span> copying certificate authorities
+<span class="token operator">and</span> service account <span class="token keyword">keys</span> <span class="token keyword">on</span> each node <span class="token operator">and</span> <span class="token keyword">then</span> running the <span class="token keyword">following</span> <span class="token keyword">as</span> root:
+kubeadm <span class="token keyword">join</span> <span class="token number">a</span><span class="token punctuation">.</span><span class="token number">b</span><span class="token punctuation">.</span>com:<span class="token number">6443</span> <span class="token comment" spellcheck="true">--token 7jw09r.gkrrccs76t71wb3t \</span>
+<span class="token comment" spellcheck="true">--discovery-token-ca-cert-hash sha256:69e81cb5d93c782b58f95cbbb2bf5624f76bcce332e7f16fb5f8c76a75af51b8 \</span>
+<span class="token comment" spellcheck="true">--control-plane</span>
+<span class="token keyword">Then</span> you can <span class="token keyword">join</span> <span class="token keyword">any</span> number <span class="token keyword">of</span> worker nodes <span class="token keyword">by</span> running the <span class="token keyword">following</span> <span class="token keyword">on</span> each <span class="token keyword">as</span> root:
+kubeadm <span class="token keyword">join</span> <span class="token number">a</span><span class="token punctuation">.</span><span class="token number">b</span><span class="token punctuation">.</span>com:<span class="token number">6443</span> <span class="token comment" spellcheck="true">--token 7jw09r.gkrrccs76t71wb3t \</span>
+<span class="token comment" spellcheck="true">--discovery-token-ca-cert-hash sha256:69e81cb5d93c782b58f95cbbb2bf5624f76bcce332e7f16fb5f8c76a75af51b8</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>Cleanup iptables rules after kubeadm reset</p>
+<pre class="line-numbers language-properties"><code class="language-properties"><span class="token attr-name">sudo</span> <span class="token attr-value">kubeadm reset</span>
+<span class="token attr-name">sudo</span> <span class="token attr-value">iptables -F &amp;&amp; sudo iptables -t nat -F &amp;&amp; sudo iptables -t mangle -F &amp;&amp; sudo iptables -X</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p><a href="https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta3/" target="_blank" rel="noopener">https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta3/</a></p>
+<p>Dashboard</p>
+<ul>
+<li><p>Download the manifest, change service type to NodePort</p>
+</li>
+<li><p>Create service account, cluster role binding and token</p>
+</li>
+</ul>
+<hr>
+<p><a href="https://mp.weixin.qq.com/s/rh6-JeiMKwDj4qre-SQgYg" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2022/12/12/北京-温哥华入境简记/">
+        ← prev <!--北京-温哥华入境简记-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2022/11/15/flannel-pod-to-pod网络连通性问题排查/">
+        <!--flannel pod to pod网络连通性问题排查--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+

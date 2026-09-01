@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+    <head><meta name="generator" content="Hexo 3.9.0">
+		
+        <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content>
+        <link rel="shortcut icon" href="/images/avatar.png">
+        <link rel="canonical" href="https://peteyuan.com/2022/11/03/How-to-debug-kubelet/">
+        <title>How to debug kubelet | peteyuan.com</title>
+
+        <link rel="stylesheet" type="text/css" href="/styles/crisp.css">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/prism-solarizedlight.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+    
+		<body class="post-template">
+	
+
+        <header id="header">
+            <a id="logo" href="/"><img src="/images/avatar.png" alt="peteyuan.com"></a>
+            <h1><a href="/">Pete Yuan</a></h1>
+            <p></p>
+            <nav id="menu">
+                <a href="/">Home</a>
+                <a href="/archives/">Archives</a>
+                <a href="/categories/">Categories</a>
+                <a href="/about/">About</a>
+            </nav>
+            
+
+        </header>
+
+        <main id="content">
+        
+
+<article class="post">
+  <div class="post-meta">
+    <span class="post-date">November 3, 2022</span>
+    
+    <span class="taglist"> &middot;
+      <a href="/tags/kubernetes/">kubernetes</a><a href="/tags/kubelet/">kubelet</a>
+    </span>
+    
+  </div>
+
+  <h1 class="post-title">How to debug kubelet</h1>
+  <section class="post-content article-entry">
+    <p>How to get kubelet healthz status?</p>
+<pre><code># curl -k https://127.0.0.1:10250/healthz -H &quot;Authorization: Bearer OX8__bQr1nDu-ebqQJJGjIuh&quot;
+[+]ping ok
+[+]log ok
+[-]syncloop failed: reason withheld
+healthz check failed</code></pre><p>How to get the Bearer token?</p>
+<pre class="line-numbers language-apache"><code class="language-apache"># cat /etc/kubernetes/admin.conf |grep token
+    token: "ZALlL_BOTtZeZRfsQSwkRI8E"<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>How to get apiserver metrics?</p>
+<pre class="line-numbers language-javascript"><code class="language-javascript">curl <span class="token operator">-</span>k  <span class="token operator">-</span>H <span class="token string">"Authorization: Bearer ZALlL_BOTtZeZRfsQSwkRI8E"</span> https<span class="token punctuation">:</span><span class="token operator">/</span><span class="token operator">/</span>localhost<span class="token punctuation">:</span><span class="token number">8443</span><span class="token operator">/</span>metrics<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>How to get debug or goroutine info?</p>
+<pre class="line-numbers language-go"><code class="language-go">curl <span class="token operator">-</span>H <span class="token string">"Authorization: Bearer OX8__bQr1nDu-ebqQJJGjIuh"</span> <span class="token operator">-</span>k https<span class="token punctuation">:</span><span class="token operator">/</span><span class="token operator">/</span><span class="token number">127.0</span><span class="token punctuation">.</span><span class="token number">0.1</span><span class="token punctuation">:</span><span class="token number">10250</span><span class="token operator">/</span>debug
+
+
+curl <span class="token operator">-</span>H <span class="token string">"Authorization: Bearer OX8__bQr1nDu-ebqQJJGjIuh"</span> <span class="token operator">-</span>k https<span class="token punctuation">:</span><span class="token operator">/</span><span class="token operator">/</span><span class="token number">127.0</span><span class="token punctuation">.</span><span class="token number">0.1</span><span class="token punctuation">:</span><span class="token number">10250</span><span class="token operator">/</span>debug<span class="token operator">/</span>pprof
+
+
+curl <span class="token operator">-</span>H <span class="token string">"Authorization: Bearer OX8__bQr1nDu-ebqQJJGjIuh"</span> <span class="token operator">-</span>k https<span class="token punctuation">:</span><span class="token operator">/</span><span class="token operator">/</span><span class="token number">127.0</span><span class="token punctuation">.</span><span class="token number">0.1</span><span class="token punctuation">:</span><span class="token number">10250</span><span class="token operator">/</span>debug<span class="token operator">/</span>pprof<span class="token operator">/</span>goroutine <span class="token operator">-</span>o goroutine
+
+
+curl <span class="token operator">-</span>H <span class="token string">"Authorization: Bearer OX8__bQr1nDu-ebqQJJGjIuh"</span> <span class="token operator">-</span>k https<span class="token punctuation">:</span><span class="token operator">/</span><span class="token operator">/</span><span class="token number">127.0</span><span class="token punctuation">.</span><span class="token number">0.1</span><span class="token punctuation">:</span><span class="token number">10250</span><span class="token operator">/</span>debug<span class="token operator">/</span>pprof<span class="token operator">/</span>goroutine?debug<span class="token operator">=</span><span class="token number">2</span> <span class="token operator">-</span>o goroutine<span class="token number">-2</span>
+
+
+### stack trace sample<span class="token punctuation">:</span>
+
+
+goroutine <span class="token number">251</span> <span class="token punctuation">[</span>syscall<span class="token punctuation">,</span> <span class="token number">939</span> minutes<span class="token punctuation">]</span><span class="token punctuation">:</span>
+syscall<span class="token punctuation">.</span><span class="token function">Syscall6</span><span class="token punctuation">(</span><span class="token number">0x106</span><span class="token punctuation">,</span> <span class="token number">0xffffffffffffff9c</span><span class="token punctuation">,</span> <span class="token number">0xc001357440</span><span class="token punctuation">,</span> <span class="token number">0xc0015a2378</span><span class="token punctuation">,</span> <span class="token number">0x0</span><span class="token punctuation">,</span> <span class="token number">0x0</span><span class="token punctuation">,</span> <span class="token number">0x0</span><span class="token punctuation">,</span> <span class="token number">0xc0017d3320</span><span class="token punctuation">,</span> <span class="token number">0xc0017d3338</span><span class="token punctuation">,</span> <span class="token number">0x411b98</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span>usr<span class="token operator">/</span>local<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>syscall<span class="token operator">/</span>asm_linux_amd64<span class="token punctuation">.</span>s<span class="token punctuation">:</span><span class="token number">41</span> <span class="token operator">+</span><span class="token number">0x5</span>
+syscall<span class="token punctuation">.</span><span class="token function">fstatat</span><span class="token punctuation">(</span><span class="token number">0xffffffffffffff9c</span><span class="token punctuation">,</span> <span class="token number">0xc001357320</span><span class="token punctuation">,</span> <span class="token number">0x5e</span><span class="token punctuation">,</span> <span class="token number">0xc0015a2378</span><span class="token punctuation">,</span> <span class="token number">0x0</span><span class="token punctuation">,</span> <span class="token number">0xc001357129</span><span class="token punctuation">,</span> <span class="token number">0x8</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span>usr<span class="token operator">/</span>local<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>syscall<span class="token operator">/</span>zsyscall_linux_amd64<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">1480</span> <span class="token operator">+</span><span class="token number">0xc8</span>
+syscall<span class="token punctuation">.</span><span class="token function">Stat</span><span class="token punctuation">(</span><span class="token operator">...</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span>usr<span class="token operator">/</span>local<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>syscall<span class="token operator">/</span>syscall_linux_amd64<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">65</span>
+os<span class="token punctuation">.</span><span class="token function">statNolog</span><span class="token punctuation">(</span><span class="token number">0xc001357320</span><span class="token punctuation">,</span> <span class="token number">0x5e</span><span class="token punctuation">,</span> <span class="token number">0x3cf2e80</span><span class="token punctuation">,</span> <span class="token number">0x0</span><span class="token punctuation">,</span> <span class="token number">0x6</span><span class="token punctuation">,</span> <span class="token number">0x7f154449dec8</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span>usr<span class="token operator">/</span>local<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>os<span class="token operator">/</span>stat_unix<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">31</span> <span class="token operator">+</span><span class="token number">0x6e</span>
+os<span class="token punctuation">.</span><span class="token function">Stat</span><span class="token punctuation">(</span><span class="token number">0xc001357320</span><span class="token punctuation">,</span> <span class="token number">0x5e</span><span class="token punctuation">,</span> <span class="token number">0xc000d56b68</span><span class="token punctuation">,</span> <span class="token number">0x3</span><span class="token punctuation">,</span> <span class="token number">0xc000facb40</span><span class="token punctuation">,</span> <span class="token number">0x48</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span>usr<span class="token operator">/</span>local<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>os<span class="token operator">/</span>stat<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">13</span> <span class="token operator">+</span><span class="token number">0x4d</span>
+k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>vendor<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>mount<span class="token operator">-</span>utils<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>Mounter<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">IsLikelyNotMountPoint</span><span class="token punctuation">(</span><span class="token number">0xc000becfc0</span><span class="token punctuation">,</span> <span class="token number">0xc001357320</span><span class="token punctuation">,</span> <span class="token number">0x5e</span><span class="token punctuation">,</span> <span class="token number">0xc001302700</span><span class="token punctuation">,</span> <span class="token number">0x1</span><span class="token punctuation">,</span> <span class="token number">0x1</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>_output<span class="token operator">/</span>dockerized<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>vendor<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>mount<span class="token operator">-</span>utils<span class="token operator">/</span>mount_linux<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">284</span> <span class="token operator">+</span><span class="token number">0x3c</span>
+k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>Kubelet<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getMountedVolumePathListFromDisk</span><span class="token punctuation">(</span><span class="token number">0xc0000c5500</span><span class="token punctuation">,</span> <span class="token number">0xc00097b798</span><span class="token punctuation">,</span> <span class="token number">0x24</span><span class="token punctuation">,</span> <span class="token number">0xc001449e90</span><span class="token punctuation">,</span> <span class="token number">0xc0017d35b0</span><span class="token punctuation">,</span> <span class="token number">0xe73afb5b</span><span class="token punctuation">,</span> <span class="token number">0xd6f7addb2f85b69d</span><span class="token punctuation">,</span> <span class="token number">0x3929dc9</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>_output<span class="token operator">/</span>dockerized<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token operator">/</span>kubelet_getters<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">360</span> <span class="token operator">+</span><span class="token number">0x110</span>
+k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>Kubelet<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">podVolumesExist</span><span class="token punctuation">(</span><span class="token number">0xc0000c5500</span><span class="token punctuation">,</span> <span class="token number">0xc00097b798</span><span class="token punctuation">,</span> <span class="token number">0x24</span><span class="token punctuation">,</span> <span class="token number">0x0</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>_output<span class="token operator">/</span>dockerized<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token operator">/</span>kubelet_volumes<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">64</span> <span class="token operator">+</span><span class="token number">0xb4</span>
+k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>Kubelet<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">cleanupOrphanedPodCgroups</span><span class="token punctuation">(</span><span class="token number">0xc0000c5500</span><span class="token punctuation">,</span> <span class="token number">0x4fe5880</span><span class="token punctuation">,</span> <span class="token number">0xc0017b8e00</span><span class="token punctuation">,</span> <span class="token number">0xc001603920</span><span class="token punctuation">,</span> <span class="token number">0xc00117f600</span><span class="token punctuation">,</span> <span class="token number">0x5</span><span class="token punctuation">,</span> <span class="token number">0x8</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>_output<span class="token operator">/</span>dockerized<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token operator">/</span>kubelet_pods<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">1955</span> <span class="token operator">+</span><span class="token number">0x3cd</span>
+k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>Kubelet<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">HandlePodCleanups</span><span class="token punctuation">(</span><span class="token number">0xc0000c5500</span><span class="token punctuation">,</span> <span class="token number">0x0</span><span class="token punctuation">,</span> <span class="token number">0x0</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>_output<span class="token operator">/</span>dockerized<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token operator">/</span>kubelet_pods<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">1130</span> <span class="token operator">+</span><span class="token number">0x659</span>
+k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>Kubelet<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">syncLoopIteration</span><span class="token punctuation">(</span><span class="token number">0xc0000c5500</span><span class="token punctuation">,</span> <span class="token number">0xc000c1e900</span><span class="token punctuation">,</span> <span class="token number">0x4fd5fe0</span><span class="token punctuation">,</span> <span class="token number">0xc0000c5500</span><span class="token punctuation">,</span> <span class="token number">0xc000291260</span><span class="token punctuation">,</span> <span class="token number">0xc0002912c0</span><span class="token punctuation">,</span> <span class="token number">0xc001006a20</span><span class="token punctuation">,</span> <span class="token number">0x1</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>_output<span class="token operator">/</span>dockerized<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token operator">/</span>kubelet<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">2000</span> <span class="token operator">+</span><span class="token number">0x18e2</span>
+k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>Kubelet<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">syncLoop</span><span class="token punctuation">(</span><span class="token number">0xc0000c5500</span><span class="token punctuation">,</span> <span class="token number">0xc000c1e900</span><span class="token punctuation">,</span> <span class="token number">0x4fd5fe0</span><span class="token punctuation">,</span> <span class="token number">0xc0000c5500</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>_output<span class="token operator">/</span>dockerized<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token operator">/</span>kubelet<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">1867</span> <span class="token operator">+</span><span class="token number">0x3f2</span>
+k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>Kubelet<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">Run</span><span class="token punctuation">(</span><span class="token number">0xc0000c5500</span><span class="token punctuation">,</span> <span class="token number">0xc000c1e900</span><span class="token punctuation">)</span>
+        <span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>_output<span class="token operator">/</span>dockerized<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>pkg<span class="token operator">/</span>kubelet<span class="token operator">/</span>kubelet<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">1447</span> <span class="token operator">+</span><span class="token number">0x2a5</span>
+created by k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>cmd<span class="token operator">/</span>kubelet<span class="token operator">/</span>app<span class="token punctuation">.</span>startKubelet
+        <span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>_output<span class="token operator">/</span>dockerized<span class="token operator">/</span><span class="token keyword">go</span><span class="token operator">/</span>src<span class="token operator">/</span>k8s<span class="token punctuation">.</span>io<span class="token operator">/</span>kubernetes<span class="token operator">/</span>cmd<span class="token operator">/</span>kubelet<span class="token operator">/</span>app<span class="token operator">/</span>server<span class="token punctuation">.</span><span class="token keyword">go</span><span class="token punctuation">:</span><span class="token number">1183</span> <span class="token operator">+</span><span class="token number">0x5f</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>How to check system info?</p>
+<pre><code># dmesg |grep &quot;not responding&quot; | tail
+[109934.556157] nfs: server 10.150.200.91 not responding, timed out
+[109950.940236] nfs: server 10.150.200.91 not responding, timed out</code></pre><hr>
+<p><a href="https://mp.weixin.qq.com/s/3G9qx6wuZd47n3IMu5mrXQ" target="_blank" rel="noopener">original refer</a></p>
+
+  </section>
+  <footer class="post-footer">
+    <!--
+    <section class="author">
+      <h4>Pete Yuan</h4>
+      <p></p>
+    </section>
+    -->
+  </footer>
+</article>
+
+
+<section id="comments" class="post-comments">
+  <h3 class="comments-title">Comments</h3>
+  <script src="https://giscus.app/client.js" data-repo="ydp/ydp.github.io" data-repo-id="MDEwOlJlcG9zaXRvcnkxODM2MjI3NzE=" data-category="Announcements" data-category-id="DIC_kwDOCvHcc84DErnu" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="en" crossorigin="anonymous" async>
+  </script>
+</section>
+
+
+
+<nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/2022/11/04/找工作及工签申请时间线/">
+        ← prev <!--找工作及工签申请时间线-->
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/2022/11/03/How-to-use-tcpdump-on-windows/">
+        <!--How to use tcpdump on windows--> next →
+    </a>
+    
+</nav>
+
+
+        </main>
+        <footer id="footer">
+            <section id="footer-message">&copy; 2026 Pete Yuan. All rights reserved.</section>
+        </footer>
+    </body>
+</html>
+
+
